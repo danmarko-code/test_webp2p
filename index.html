@@ -1,0 +1,2450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Kindred - Community Micro-Help</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+  
+  <!-- External Tooling: Leaflet, Chart.js, Lucide, Tailwind -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            md: {
+              surface: '#FFF8F5',
+              'on-surface': '#221A15',
+              'surface-variant': '#53433B',
+              'on-surface-variant': '#735B50',
+              'surface-container': '#F8EDE7',
+              'surface-container-low': '#F3E5DE',
+              'surface-container-high': '#EFE0D7',
+              primary: '#C05600',
+              'primary-hover': '#9B4500',
+              'primary-dark': '#381A00',
+              'on-primary': '#FFFFFF',
+              'primary-container': '#FFDCC6',
+              'on-primary-container': '#331200',
+              secondary: '#775747',
+              'secondary-container': '#FFDBCB',
+              'on-secondary-container': '#2C160B',
+              tertiary: '#695E2F',
+              outline: '#85736B',
+              'outline-variant': '#E8D8D0',
+            }
+          },
+          fontFamily: {
+            roboto: ['Roboto', 'sans-serif'],
+          },
+          keyframes: {
+            marquee: {
+              '0%': { transform: 'translateX(0%)' },
+              '100%': { transform: 'translateX(-50%)' },
+            }
+          },
+          animation: {
+            marquee: 'marquee 28s linear infinite',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    body { -webkit-tap-highlight-color: transparent; }
+  </style>
+</head>
+<body class="bg-md-surface font-roboto text-md-on-surface antialiased min-h-screen pb-24 md:pb-12">
+
+  <!-- ==================== HEADER ==================== -->
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-md-outline-variant/60 shadow-xs px-4 md:px-8 py-3 transition-all">
+    <div class="max-w-7xl mx-auto flex items-center justify-between gap-3">
+      
+      <!-- Brand Logo -->
+      <div class="flex items-center gap-2 cursor-pointer shrink-0" onclick="setRole('helper')">
+        <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-md-primary flex items-center justify-center text-white shadow-sm shadow-md-primary/30">
+          <i data-lucide="heart-handshake" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <span class="text-xl sm:text-2xl font-black tracking-tight text-md-primary">kindred<span class="text-md-on-surface">.</span></span>
+          <span class="hidden sm:block text-[10px] text-md-on-surface-variant font-medium -mt-1">Everyday Micro-Help</span>
+        </div>
+      </div>
+
+      <!-- Centered Role Switcher (Desktop) -->
+      <div class="hidden md:block">
+        <div class="bg-md-surface-container p-1 rounded-full flex items-center border border-md-outline-variant shadow-inner">
+          <button 
+            id="btn-helper-mode" 
+            onclick="setRole('helper')" 
+            class="flex items-center gap-2 px-5 py-2 rounded-full text-xs font-bold transition-all bg-md-primary text-white shadow-md cursor-pointer"
+          >
+            <i data-lucide="compass" class="w-4 h-4"></i>
+            Helper Mode
+          </button>
+          <button 
+            id="btn-seeker-mode" 
+            onclick="setRole('seeker')" 
+            class="flex items-center gap-2 px-5 py-2 rounded-full text-xs font-bold transition-all text-md-on-surface-variant hover:text-md-primary cursor-pointer"
+          >
+            <i data-lucide="plus-circle" class="w-4 h-4"></i>
+            Need Help
+          </button>
+        </div>
+      </div>
+
+      <!-- Right Nav Buttons -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        <button onclick="toggleModal('modal-notifications', true)" class="relative p-2 rounded-full hover:bg-md-surface-container text-md-on-surface-variant transition-colors" title="Notifications">
+          <i data-lucide="bell" class="w-5 h-5"></i>
+          <span id="notif-badge" class="absolute top-1.5 right-1.5 w-2 h-2 bg-md-primary rounded-full ring-2 ring-white"></span>
+        </button>
+
+        <button onclick="toggleChat()" class="hidden sm:flex relative p-2 rounded-full hover:bg-md-surface-container text-md-on-surface-variant transition-colors" title="Messages">
+          <i data-lucide="mail" class="w-5 h-5"></i>
+          <span class="absolute top-1 right-1 w-2 h-2 bg-md-primary rounded-full"></span>
+        </button>
+
+        <button onclick="toggleModal('modal-dispute', true)" class="p-2 rounded-full hover:bg-md-surface-container text-md-on-surface-variant transition-colors" title="Mediation Center">
+          <i data-lucide="scale" class="w-5 h-5"></i>
+        </button>
+
+        <button 
+          onclick="toggleModal('modal-wallet', true)"
+          class="flex items-center gap-1.5 bg-md-surface-container hover:bg-md-surface-container-high px-3 py-1.5 sm:px-4 sm:py-2 rounded-full border border-md-outline-variant text-xs font-bold text-md-on-surface transition-all active:scale-95"
+        >
+          <i data-lucide="wallet" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-md-primary"></i>
+          <span id="header-balance-text">$120.00</span>
+        </button>
+
+        <button 
+          onclick="openProfile(currentUser.name, currentUser.avatar, currentUser.isTrusted, currentUser.rating, currentUser.helperReviewsCount)" 
+          class="w-8 h-8 sm:w-10 sm:h-10 rounded-full ring-2 ring-md-primary/20 hover:ring-md-primary overflow-hidden active:scale-95 transition-all shrink-0"
+        >
+          <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150" alt="Profile" class="w-full h-full object-cover" />
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ==================== MOBILE DOCK (BOTTOM NAVIGATION) ==================== -->
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-md-outline-variant/60 px-4 py-2 flex items-center justify-around shadow-lg">
+    <button 
+      id="dock-helper-btn"
+      onclick="setRole('helper')" 
+      class="flex flex-col items-center gap-1 text-[10px] font-bold text-md-primary transition-transform active:scale-90"
+    >
+      <i data-lucide="compass" class="w-5 h-5"></i>
+      <span>Helper</span>
+    </button>
+
+    <button 
+      onclick="toggleModal('modal-create', true)"
+      class="w-12 h-12 -mt-5 rounded-full bg-md-primary text-white flex items-center justify-center shadow-lg shadow-md-primary/40 active:scale-90 transition-transform"
+    >
+      <i data-lucide="plus" class="w-6 h-6"></i>
+    </button>
+
+    <button 
+      id="dock-seeker-btn"
+      onclick="setRole('seeker')" 
+      class="flex flex-col items-center gap-1 text-[10px] font-bold text-md-on-surface-variant transition-transform active:scale-90"
+    >
+      <i data-lucide="clipboard-list" class="w-5 h-5"></i>
+      <span>Tasks</span>
+    </button>
+
+    <button 
+      onclick="toggleChat()" 
+      class="flex flex-col items-center gap-1 text-[10px] font-bold text-md-on-surface-variant transition-transform active:scale-90 relative"
+    >
+      <i data-lucide="message-square" class="w-5 h-5"></i>
+      <span>Chat</span>
+      <span class="absolute top-0 right-1 w-2 h-2 bg-md-primary rounded-full"></span>
+    </button>
+  </nav>
+
+  <!-- ==================== DRAGGABLE FLOATING LIVE PILL ==================== -->
+  <div 
+    id="floating-live-pill" 
+    class="fixed top-16 right-3 sm:top-20 sm:right-6 z-50 select-none touch-none transition-shadow cursor-grab active:cursor-grabbing"
+    style="transform: translate3d(0,0,0);"
+  >
+    <!-- Collapsed State -->
+    <div 
+      id="live-pill-collapsed" 
+      class="flex items-center gap-2 bg-neutral-900/90 hover:bg-neutral-900 backdrop-blur-md text-white px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full shadow-2xl border border-white/20 active:scale-95 transition-all text-xs"
+    >
+      <span class="relative flex h-2 w-2 shrink-0">
+        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+        <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+      </span>
+
+      <span class="text-orange-300 font-bold">Sophia C.</span>
+      <span class="text-white/40">•</span>
+      <span id="pill-summary-status" class="truncate max-w-[120px] sm:max-w-none">On the Way (12m)</span>
+      <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-white/60 ml-0.5"></i>
+    </div>
+
+    <!-- Expanded State -->
+    <div 
+      id="live-pill-expanded" 
+      class="hidden w-[90vw] sm:w-80 max-w-sm bg-neutral-950/95 backdrop-blur-xl text-white rounded-3xl p-5 shadow-2xl border border-white/15 animate-in fade-in zoom-in-95 duration-150"
+    >
+      <div class="flex items-center justify-between pb-2.5 border-b border-white/10">
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          <span class="text-[10px] uppercase tracking-wider text-orange-300 font-black">Live Tracking</span>
+        </div>
+        <button 
+          type="button" 
+          onclick="event.stopPropagation(); toggleLivePillExpand(false);" 
+          class="p-1 rounded-full hover:bg-white/10 text-white/60 hover:text-white"
+        >
+          <i data-lucide="minimize-2" class="w-3.5 h-3.5"></i>
+        </button>
+      </div>
+
+      <div class="py-3">
+        <h4 class="font-bold text-xs sm:text-sm leading-tight text-white">Plant Watering & Mail Hold</h4>
+        <p class="text-[11px] text-white/70 mt-0.5">Helper: <strong class="text-white font-semibold">Sophia Chen</strong></p>
+        
+        <div class="mt-3 p-3 bg-white/5 rounded-2xl border border-white/10 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <i data-lucide="navigation-2" class="w-4 h-4 text-orange-400"></i>
+            <div>
+              <span class="text-[9px] text-white/50 uppercase block font-semibold">Current Radar</span>
+              <span id="pill-detail-radar" class="text-xs font-bold text-white">On the Way (12m)</span>
+            </div>
+          </div>
+          <span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold border border-emerald-400/30">Active</span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 pt-2 border-t border-white/10">
+        <button 
+          type="button" 
+          onclick="event.stopPropagation(); openOtpModal('t-3');" 
+          class="py-2.5 rounded-full bg-md-primary hover:bg-md-primary-hover text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all"
+        >
+          <i data-lucide="key" class="w-3.5 h-3.5"></i> Release PIN
+        </button>
+        <button 
+          type="button" 
+          onclick="event.stopPropagation(); toggleChat();" 
+          class="py-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition-all"
+        >
+          <i data-lucide="message-square" class="w-3.5 h-3.5"></i> Message
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Category Nav Bar -->
+  <nav class="bg-white border-b border-md-outline-variant/60 px-4 md:px-8 py-2 overflow-x-auto no-scrollbar">
+    <div class="max-w-7xl mx-auto flex items-center gap-5 sm:gap-6 text-xs font-medium text-md-on-surface-variant whitespace-nowrap">
+      <button onclick="filterByCategory(null)" class="flex items-center gap-1 text-md-primary font-bold hover:text-md-primary-hover transition-colors">
+        <i data-lucide="flame" class="w-3.5 h-3.5 text-orange-500"></i> Trending
+      </button>
+      <button onclick="filterByCategory('Companionship')" class="hover:text-md-primary transition-colors">Companionship</button>
+      <button onclick="filterByCategory('Chores')" class="hover:text-md-primary transition-colors">Groceries & Chores</button>
+      <button onclick="filterByCategory('Pet Care')" class="hover:text-md-primary transition-colors">Pet Care & Dog Walk</button>
+      <button onclick="filterByCategory('Yard Work')" class="hover:text-md-primary transition-colors">Yard & Garden</button>
+      <button onclick="filterByCategory('Heavy Lifting')" class="hover:text-md-primary transition-colors">Moving & Heavy Lifting</button>
+      <button onclick="filterByCategory('House Sitting')" class="hover:text-md-primary transition-colors">House Sitting & Plants</button>
+      <button onclick="filterByCategory('Elder Support')" class="hover:text-md-primary transition-colors">Senior Support</button>
+      <button onclick="filterByCategory('Queue Waiting')" class="hover:text-md-primary transition-colors">Line & Queue Waiting</button>
+    </div>
+  </nav>
+
+  <div id="mode-status-bar" class="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2 text-center text-xs font-semibold text-amber-900 transition-all">
+    <span id="mode-status-text">🔍 You are browsing as a <strong>Helper</strong>. Find neighbor requests below.</span>
+  </div>
+
+  <!-- ==================== HELPER VIEW ==================== -->
+  <div id="view-helper" class="block animate-in fade-in duration-200">
+    
+    <section class="relative overflow-hidden bg-gradient-to-br from-[#2D1402] via-[#461F05] to-[#1E0D02] text-white py-10 sm:py-12 px-4 md:px-8">
+      <div class="absolute -right-20 -top-20 w-96 h-96 bg-orange-500/20 rounded-full blur-3xl pointer-events-none"></div>
+      
+      <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10">
+        
+        <div class="lg:col-span-7 text-left">
+          <span class="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-white/10 text-orange-200 text-xs font-semibold uppercase tracking-wider mb-4 border border-white/15">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-400"></i> Local Peer-to-Peer Help
+          </span>
+
+          <h1 class="text-3xl md:text-5xl font-black tracking-tight leading-tight mb-4">
+            Lend a hand nearby.<br />No special skills required.
+          </h1>
+          <p class="text-xs md:text-sm text-white/80 max-w-xl mb-6 leading-relaxed">
+            Help neighbors with light chores, friendly walks, and quick errands. Get compensated directly upon completion.
+          </p>
+
+          <div class="max-w-xl mb-4">
+            <div class="flex items-center bg-white rounded-full p-2 shadow-xl border border-white/20">
+              <div class="pl-4 text-gray-400">
+                <i data-lucide="search" class="w-5 h-5"></i>
+              </div>
+              <input 
+                type="text" 
+                id="search-input" 
+                oninput="handleSearch(this.value)"
+                placeholder="Search chores, companionship, pet care..." 
+                class="w-full px-3 py-2 text-xs sm:text-sm text-gray-800 placeholder-gray-400 focus:outline-none bg-transparent"
+              />
+              <button onclick="triggerAudioFeedback('search')" class="bg-md-primary hover:bg-md-primary-hover text-white px-5 sm:px-6 py-2 sm:py-2.5 rounded-full font-bold text-xs transition-all active:scale-95 shadow-sm">
+                Search
+              </button>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2 text-xs font-medium">
+            <span class="text-white/60 mr-1">Quick Filters:</span>
+            <button onclick="filterByCategory('Companionship')" class="px-3 py-1 rounded-full border border-white/20 bg-white/10 hover:bg-white/20 active:scale-95 transition-all">Companionship</button>
+            <button onclick="filterByCategory('Chores')" class="px-3 py-1 rounded-full border border-white/20 bg-white/10 hover:bg-white/20 active:scale-95 transition-all">Groceries & Chores</button>
+            <button onclick="filterByCategory('Pet Care')" class="px-3 py-1 rounded-full border border-white/20 bg-white/10 hover:bg-white/20 active:scale-95 transition-all">Pet Care</button>
+            <button onclick="filterByCategory('Yard Work')" class="px-3 py-1 rounded-full border border-white/20 bg-white/10 hover:bg-white/20 active:scale-95 transition-all">Yard & Garden</button>
+          </div>
+        </div>
+
+        <div class="lg:col-span-5 flex flex-col gap-3">
+          
+          <div class="bg-white/10 backdrop-blur-md rounded-3xl p-4 border border-white/15 flex items-center justify-between shadow-lg">
+            <div>
+              <span class="text-[10px] font-black tracking-wider uppercase text-orange-200">Welcome Back</span>
+              <h3 class="text-lg font-black text-white">Dan D.</h3>
+            </div>
+            <span class="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-[11px] font-bold">Helper Ready</span>
+          </div>
+
+          <div onclick="toggleModal('modal-create', true)" class="bg-white/10 backdrop-blur-md rounded-3xl p-4 border border-white/15 shadow-lg flex items-center gap-3.5 cursor-pointer hover:bg-white/15 hover:border-white/30 transition-all group active:scale-98">
+            <div class="w-10 h-10 rounded-2xl bg-orange-500/20 text-orange-300 flex items-center justify-center group-hover:bg-md-primary group-hover:text-white transition-colors">
+              <i data-lucide="file-plus-2" class="w-5 h-5"></i>
+            </div>
+            <div class="flex-1">
+              <span class="text-[10px] font-black tracking-wider uppercase text-orange-200 block">Recommended Action</span>
+              <h4 class="font-bold text-xs text-white">Post a help request</h4>
+              <p class="text-[11px] text-white/70">Connect with helpers in your area</p>
+            </div>
+            <i data-lucide="chevron-right" class="w-4 h-4 text-white/50"></i>
+          </div>
+
+          <div onclick="toggleChat()" class="bg-white/10 backdrop-blur-md rounded-3xl p-4 border border-white/15 shadow-lg flex items-center justify-between cursor-pointer hover:bg-white/15 hover:border-white/30 transition-all group active:scale-98">
+            <div class="flex items-center gap-3.5">
+              <div class="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-300 flex items-center justify-center group-hover:bg-amber-600 group-hover:text-white transition-colors">
+                <i data-lucide="message-square" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <span class="text-[10px] font-black tracking-wider uppercase text-orange-200 block">Active Chat</span>
+                <h4 class="font-bold text-xs text-white">Elena Rostova</h4>
+                <p class="text-[11px] text-white/70 line-clamp-1">"Thanks for confirming! I will see..."</p>
+              </div>
+            </div>
+            <span class="text-[10px] font-semibold text-white/60 self-start">10m ago</span>
+          </div>
+
+          <div class="bg-white/10 backdrop-blur-md rounded-3xl p-4 border border-white/15 shadow-lg flex items-center gap-3.5">
+            <div class="w-10 h-10 rounded-2xl bg-orange-500/20 text-orange-300 flex items-center justify-center">
+              <i data-lucide="shield-check" class="w-5 h-5"></i>
+            </div>
+            <div class="flex-1">
+              <div class="flex justify-between items-center mb-1">
+                <span class="text-[10px] font-black tracking-wider uppercase text-orange-200">Profile Verified</span>
+                <span class="text-xs font-black text-amber-300">85%</span>
+              </div>
+              <div class="w-full bg-black/30 rounded-full h-1.5 overflow-hidden">
+                <div class="bg-amber-400 h-full rounded-full" style="width: 85%"></div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Recommendation Carousel -->
+    <section class="max-w-7xl mx-auto px-4 md:px-8 py-8">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h3 class="text-xl font-black tracking-tight text-md-on-surface">Based on what you might be looking for</h3>
+          <p class="text-xs text-md-on-surface-variant">Click any tile to inspect full details, view location, and message</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="scrollRecommended(-300)" class="w-8 h-8 rounded-full border border-md-outline-variant bg-white flex items-center justify-center text-md-on-surface hover:bg-md-surface-container transition-colors active:scale-90">
+            <i data-lucide="chevron-left" class="w-4 h-4"></i>
+          </button>
+          <button onclick="scrollRecommended(300)" class="w-8 h-8 rounded-full border border-md-outline-variant bg-white flex items-center justify-center text-md-on-surface hover:bg-md-surface-container transition-colors active:scale-90">
+            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+
+      <div id="recommended-container" class="grid grid-flow-col auto-cols-[280px] sm:auto-cols-[300px] lg:grid-cols-4 gap-5 overflow-x-auto no-scrollbar scroll-smooth pb-2">
+        
+        <div onclick="openTileDetails('Park Stroll & Chat', 'Companionship', 'Looking for a gentle and patient person to accompany an elderly family member for a relaxing 45-minute stroll around the sunny park paths.', 'Green Valley • ~1.2 km away', '1 hour', 25, 'Elena Rostova', 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150', true, 4.9, 165, 14.4296, 120.9367)" class="bg-white rounded-3xl overflow-hidden border border-md-outline-variant shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-200 group flex flex-col justify-between cursor-pointer active:scale-98">
+          <div>
+            <div class="h-32 bg-gradient-to-br from-amber-700 to-orange-950 p-4 relative flex flex-col justify-between text-white">
+              <span class="px-2.5 py-1 rounded-full bg-white/20 text-[10px] font-bold w-fit backdrop-blur-xs">Companionship</span>
+              <div class="flex items-center gap-2">
+                <i data-lucide="sun" class="w-5 h-5 text-amber-300"></i>
+                <span class="font-bold text-sm">Park Stroll & Chat</span>
+              </div>
+            </div>
+            <div class="p-4">
+              <div class="flex items-center gap-2 mb-2">
+                <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150" class="w-6 h-6 rounded-full object-cover">
+                <span class="text-xs font-bold text-md-on-surface">Elena R.</span>
+                <span class="text-[10px] px-1.5 py-0.2 bg-orange-100 text-orange-900 rounded font-bold">Top Neighbor</span>
+              </div>
+              <p class="text-xs text-md-on-surface font-medium line-clamp-2">Reliable companion for afternoon park walks, gentle exercises, and grocery talks.</p>
+              <div class="flex items-center gap-1 mt-2 text-xs">
+                <i data-lucide="star" class="w-3.5 h-3.5 fill-amber-500 text-amber-500"></i>
+                <span class="font-bold">4.9</span>
+                <span class="text-md-on-surface-variant">(165 completed)</span>
+              </div>
+            </div>
+          </div>
+          <div class="px-4 py-3 border-t border-md-outline-variant flex items-center justify-between text-xs">
+            <span class="text-md-on-surface-variant font-medium">Avg Rate</span>
+            <span class="font-black text-sm text-md-primary">From $25</span>
+          </div>
+        </div>
+
+        <div onclick="openTileDetails('Grocery Carry Assist', 'Errands & Bags', 'Need help bringing up heavy boxes and grocery bags from the car trunk up the stairs and putting items in the kitchen.', 'Downtown District • ~2.5 km away', '45 mins', 20, 'Marcus Vance', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150', false, 4.9, 1020, 14.4150, 120.9400)" class="bg-white rounded-3xl overflow-hidden border border-md-outline-variant shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-200 group flex flex-col justify-between cursor-pointer active:scale-98">
+          <div>
+            <div class="h-32 bg-gradient-to-br from-stone-800 to-amber-900 p-4 relative flex flex-col justify-between text-white">
+              <span class="px-2.5 py-1 rounded-full bg-white/20 text-[10px] font-bold w-fit backdrop-blur-xs">Errands & Bags</span>
+              <div class="flex items-center gap-2">
+                <i data-lucide="shopping-cart" class="w-5 h-5 text-amber-300"></i>
+                <span class="font-bold text-sm">Grocery Carry Assist</span>
+              </div>
+            </div>
+            <div class="p-4">
+              <div class="flex items-center gap-2 mb-2">
+                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150" class="w-6 h-6 rounded-full object-cover">
+                <span class="text-xs font-bold text-md-on-surface">Marcus V.</span>
+                <span class="text-[10px] px-1.5 py-0.2 bg-stone-100 text-stone-800 rounded font-bold">Level 2</span>
+              </div>
+              <p class="text-xs text-md-on-surface font-medium line-clamp-2">Assisting with heavy grocery unloading, pantry organization, and stairs carrying.</p>
+              <div class="flex items-center gap-1 mt-2 text-xs">
+                <i data-lucide="star" class="w-3.5 h-3.5 fill-amber-500 text-amber-500"></i>
+                <span class="font-bold">4.9</span>
+                <span class="text-md-on-surface-variant">(1k+ helps)</span>
+              </div>
+            </div>
+          </div>
+          <div class="px-4 py-3 border-t border-md-outline-variant flex items-center justify-between text-xs">
+            <span class="text-md-on-surface-variant font-medium">Avg Rate</span>
+            <span class="font-black text-sm text-md-primary">From $20</span>
+          </div>
+        </div>
+
+        <div onclick="openTileDetails('Dog Sitting & Walk', 'Pet Care', 'Looking for someone who loves animals to take our energetic retriever for an afternoon park walk and keep company for 2 hours.', 'Westside Suburbs • ~3.8 km away', '2 hours', 30, 'Sophia Chen', 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150', true, 5.0, 417, 14.3900, 120.9100)" class="bg-white rounded-3xl overflow-hidden border border-md-outline-variant shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-200 group flex flex-col justify-between cursor-pointer active:scale-98">
+          <div>
+            <div class="h-32 bg-gradient-to-br from-yellow-600 to-amber-800 p-4 relative flex flex-col justify-between text-white">
+              <span class="px-2.5 py-1 rounded-full bg-white/20 text-[10px] font-bold w-fit backdrop-blur-xs">Pet Care</span>
+              <div class="flex items-center gap-2">
+                <i data-lucide="heart-handshake" class="w-5 h-5 text-yellow-200"></i>
+                <span class="font-bold text-sm">Dog Sitting & Walk</span>
+              </div>
+            </div>
+            <div class="p-4">
+              <div class="flex items-center gap-2 mb-2">
+                <img src="https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150" class="w-6 h-6 rounded-full object-cover">
+                <span class="text-xs font-bold text-md-on-surface">Sophia C.</span>
+                <span class="text-[10px] px-1.5 py-0.2 bg-yellow-100 text-yellow-900 rounded font-bold">Top Rated</span>
+              </div>
+              <p class="text-xs text-md-on-surface font-medium line-clamp-2">Calm, attentive home dog sitting, walking, light coat brushing, and yard company.</p>
+              <div class="flex items-center gap-1 mt-2 text-xs">
+                <i data-lucide="star" class="w-3.5 h-3.5 fill-amber-500 text-amber-500"></i>
+                <span class="font-bold">5.0</span>
+                <span class="text-md-on-surface-variant">(417 completed)</span>
+              </div>
+            </div>
+          </div>
+          <div class="px-4 py-3 border-t border-md-outline-variant flex items-center justify-between text-xs">
+            <span class="text-md-on-surface-variant font-medium">Avg Rate</span>
+            <span class="font-black text-sm text-md-primary">From $30</span>
+          </div>
+        </div>
+
+        <div onclick="openTileDetails('Yard Raking & Cleanup', 'Yard & Garden', 'Need help raking fallen dry leaves from our front yard and stuffing them into 3 yard bags provided.', 'Oakridge Area • ~1.8 km away', '1.5 hours', 25, 'David Miller', 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150', true, 4.9, 331, 14.4350, 120.9500)" class="bg-white rounded-3xl overflow-hidden border border-md-outline-variant shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-200 group flex flex-col justify-between cursor-pointer active:scale-98">
+          <div>
+            <div class="h-32 bg-gradient-to-br from-emerald-800 to-stone-900 p-4 relative flex flex-col justify-between text-white">
+              <span class="px-2.5 py-1 rounded-full bg-white/20 text-[10px] font-bold w-fit backdrop-blur-xs">Yard & Garden</span>
+              <div class="flex items-center gap-2">
+                <i data-lucide="leaf" class="w-5 h-5 text-emerald-300"></i>
+                <span class="font-bold text-sm">Yard Raking & Cleanup</span>
+              </div>
+            </div>
+            <div class="p-4">
+              <div class="flex items-center gap-2 mb-2">
+                <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150" class="w-6 h-6 rounded-full object-cover">
+                <span class="text-xs font-bold text-md-on-surface">David M.</span>
+                <span class="text-[10px] px-1.5 py-0.2 bg-emerald-100 text-emerald-900 rounded font-bold">Level 2</span>
+              </div>
+              <p class="text-xs text-md-on-surface font-medium line-clamp-2">Front and backyard leaf raking, branch bagging, and tidy porch sweeping.</p>
+              <div class="flex items-center gap-1 mt-2 text-xs">
+                <i data-lucide="star" class="w-3.5 h-3.5 fill-amber-500 text-amber-500"></i>
+                <span class="font-bold">4.9</span>
+                <span class="text-md-on-surface-variant">(331 completed)</span>
+              </div>
+            </div>
+          </div>
+          <div class="px-4 py-3 border-t border-md-outline-variant flex items-center justify-between text-xs">
+            <span class="text-md-on-surface-variant font-medium">Avg Rate</span>
+            <span class="font-black text-sm text-md-primary">From $25</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Infinite Marquee Story Bar -->
+    <section class="max-w-7xl mx-auto px-4 md:px-8 py-6">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-xs font-black uppercase tracking-wider text-md-on-surface-variant">Community Highlights & Verified Stories</span>
+        <span class="text-[11px] text-md-primary font-bold">Live Updates</span>
+      </div>
+      
+      <div class="relative overflow-hidden w-full rounded-3xl bg-md-surface-container py-3 border border-md-outline-variant/60">
+        <div class="flex gap-4 animate-marquee hover:[animation-play-state:paused] whitespace-nowrap w-max">
+          
+          <div class="inline-flex items-center gap-3 bg-white px-4 py-2 rounded-2xl border border-md-outline-variant shadow-xs">
+            <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150" class="w-8 h-8 rounded-full object-cover">
+            <div>
+              <p class="text-xs font-bold text-md-on-surface">Elena Rostova • Paid $25</p>
+              <p class="text-[10px] text-emerald-700 font-semibold">Accompanied grandmom walk in Green Valley</p>
+            </div>
+          </div>
+
+          <div class="inline-flex items-center gap-3 bg-white px-4 py-2 rounded-2xl border border-md-outline-variant shadow-xs">
+            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150" class="w-8 h-8 rounded-full object-cover">
+            <div>
+              <p class="text-xs font-bold text-md-on-surface">Marcus Vance • Paid $20</p>
+              <p class="text-[10px] text-emerald-700 font-semibold">Grocery unload completed in 35 mins</p>
+            </div>
+          </div>
+
+          <div class="inline-flex items-center gap-3 bg-white px-4 py-2 rounded-2xl border border-md-outline-variant shadow-xs">
+            <img src="https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150" class="w-8 h-8 rounded-full object-cover">
+            <div>
+              <p class="text-xs font-bold text-md-on-surface">Sophia Chen • Paid $30</p>
+              <p class="text-[10px] text-emerald-700 font-semibold">Puppy sitting safely confirmed & released</p>
+            </div>
+          </div>
+
+          <div class="inline-flex items-center gap-3 bg-white px-4 py-2 rounded-2xl border border-md-outline-variant shadow-xs">
+            <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150" class="w-8 h-8 rounded-full object-cover">
+            <div>
+              <p class="text-xs font-bold text-md-on-surface">David Miller • Paid $30</p>
+              <p class="text-[10px] text-emerald-700 font-semibold">Leaf raking verified by local seeker</p>
+            </div>
+          </div>
+
+          <div class="inline-flex items-center gap-3 bg-white px-4 py-2 rounded-2xl border border-md-outline-variant shadow-xs">
+            <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150" class="w-8 h-8 rounded-full object-cover">
+            <div>
+              <p class="text-xs font-bold text-md-on-surface">Dan Dulutan • Earned $25</p>
+              <p class="text-[10px] text-emerald-700 font-semibold">Funds moved to available wallet balance</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- Value Propositions -->
+    <section class="max-w-7xl mx-auto px-4 md:px-8 py-8 border-t border-b border-md-outline-variant/30 my-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="space-y-1.5">
+          <div class="w-9 h-9 rounded-xl bg-md-surface-container flex items-center justify-center text-md-primary mb-2">
+            <i data-lucide="layout-grid" class="w-4 h-4"></i>
+          </div>
+          <h4 class="font-bold text-sm text-md-on-surface">No Complex Skills Needed</h4>
+          <p class="text-xs text-md-on-surface-variant leading-relaxed">From carrying grocery bags to friendly walks, anyone willing can offer their time.</p>
+        </div>
+
+        <div class="space-y-1.5">
+          <div class="w-9 h-9 rounded-xl bg-md-surface-container flex items-center justify-center text-md-primary mb-2">
+            <i data-lucide="shield-alert" class="w-4 h-4"></i>
+          </div>
+          <h4 class="font-bold text-sm text-md-on-surface">Protected Privacy Radius</h4>
+          <p class="text-xs text-md-on-surface-variant leading-relaxed">Exact house addresses remain hidden until both helper and seeker agree to connect.</p>
+        </div>
+
+        <div class="space-y-1.5">
+          <div class="w-9 h-9 rounded-xl bg-md-surface-container flex items-center justify-center text-md-primary mb-2">
+            <i data-lucide="lock" class="w-4 h-4"></i>
+          </div>
+          <h4 class="font-bold text-sm text-md-on-surface">Protected Escrow Balance</h4>
+          <p class="text-xs text-md-on-surface-variant leading-relaxed">Funds are held safely in escrow and only released once the seeker marks the task finished.</p>
+        </div>
+
+        <div class="space-y-1.5">
+          <div class="w-9 h-9 rounded-xl bg-md-surface-container flex items-center justify-center text-md-primary mb-2">
+            <i data-lucide="badge-check" class="w-4 h-4"></i>
+          </div>
+          <h4 class="font-bold text-sm text-md-on-surface">Verified Community Trust</h4>
+          <p class="text-xs text-md-on-surface-variant leading-relaxed">Dual-history reviews, badges, and completed exchanges on every user profile.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Helper Task Feed Grid -->
+    <section class="max-w-7xl mx-auto px-4 md:px-8 py-6">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+        <div>
+          <h3 class="text-2xl font-black tracking-tight">Available Requests Nearby</h3>
+          <p class="text-md-on-surface-variant text-xs mt-0.5">Approximate neighborhood locations shown for safety</p>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button id="filter-all" onclick="setFilter('all')" class="px-4 py-2 rounded-full text-xs font-bold bg-md-primary text-white shadow-xs active:scale-95 transition-transform">
+            All Open Tasks
+          </button>
+          <button id="filter-rec" onclick="setFilter('recommended')" class="flex items-center gap-1 px-4 py-2 rounded-full text-xs font-bold bg-white text-md-on-surface-variant border border-md-outline-variant hover:bg-md-surface-container active:scale-95 transition-transform">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5 text-md-primary"></i>
+            Recommended
+          </button>
+        </div>
+      </div>
+
+      <div id="task-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    </section>
+  </div>
+
+  <!-- ==================== FULL-WIDTH SEEKER COMMAND CENTER ==================== -->
+  <div id="view-seeker" class="hidden animate-in fade-in duration-200">
+    
+    <section class="relative overflow-hidden bg-gradient-to-br from-[#2D1402] via-[#461F05] to-[#1E0D02] text-white py-12 px-4 md:px-8">
+      <div class="absolute -right-20 -top-20 w-96 h-96 bg-orange-500/20 rounded-full blur-3xl pointer-events-none"></div>
+
+      <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10">
+        
+        <div class="lg:col-span-7 text-left">
+          <span class="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-white/10 text-orange-200 text-xs font-semibold uppercase tracking-wider mb-4 border border-white/15">
+            <i data-lucide="shield-check" class="w-3.5 h-3.5 text-amber-400"></i> Seeker Control Center
+          </span>
+
+          <h1 class="text-3xl md:text-5xl font-black tracking-tight leading-tight mb-3">
+            Manage your requests.<br />Lend tasks to verified neighbors.
+          </h1>
+          <p class="text-xs md:text-sm text-white/80 max-w-xl mb-6 leading-relaxed">
+            Funds stay locked securely in Escrow until you inspect completed work and share your 4-digit PIN.
+          </p>
+
+          <!-- Quick One-Tap Task Presets -->
+          <div class="flex flex-wrap items-center gap-2 mb-4">
+            <span class="text-white/60 text-xs mr-1 font-medium">One-Tap Presets:</span>
+            <button onclick="applyPresetTemplate('Emergency Pharmacy Run', 'Chores', 'Need prescribed cold medicines and vitamin packs brought from local pharmacy.', 15, 25)" class="px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-semibold active:scale-95 transition-all flex items-center gap-1">
+              <i data-lucide="cross" class="w-3 h-3 text-rose-300"></i> Pharmacy Run
+            </button>
+            <button onclick="applyPresetTemplate('5-Gallon Mineral Water Refill', 'Heavy Lifting', 'Need assistance carrying 3 heavy mineral water containers up to 2nd floor.', 20, 0)" class="px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-semibold active:scale-95 transition-all flex items-center gap-1">
+              <i data-lucide="droplets" class="w-3 h-3 text-blue-300"></i> Water Refill
+            </button>
+            <button onclick="applyPresetTemplate('Senior Afternoon Garden Walk', 'Companionship', 'Gentle 45-minute companion walk around neighborhood community trails.', 25, 0)" class="px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-semibold active:scale-95 transition-all flex items-center gap-1">
+              <i data-lucide="sun" class="w-3 h-3 text-amber-300"></i> Senior Walk
+            </button>
+          </div>
+        </div>
+
+        <div class="lg:col-span-5 flex flex-col gap-3">
+          
+          <div class="bg-white/10 backdrop-blur-md rounded-3xl p-5 border border-white/15 flex items-center justify-between shadow-lg">
+            <div>
+              <span class="text-[10px] font-black tracking-wider uppercase text-orange-200">Escrow Security</span>
+              <h3 id="seeker-hero-escrow-text" class="text-2xl font-black text-white">$25.00 Locked</h3>
+              <p class="text-[11px] text-white/70 mt-0.5">100% refund guarantee on helper no-show</p>
+            </div>
+            <button 
+              onclick="toggleModal('modal-create', true)"
+              class="px-5 py-3 rounded-full bg-md-primary hover:bg-md-primary-hover text-white text-xs font-bold shadow-md active:scale-95 transition-all flex items-center gap-2"
+            >
+              <i data-lucide="plus" class="w-4 h-4"></i> Post New Request
+            </button>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div class="bg-white/10 backdrop-blur-md rounded-2xl p-3.5 border border-white/15">
+              <span class="text-[10px] uppercase font-bold text-orange-200 block">Active Errand</span>
+              <span class="text-lg font-black text-white">1 Task In-Flight</span>
+            </div>
+            <div class="bg-white/10 backdrop-blur-md rounded-2xl p-3.5 border border-white/15">
+              <span class="text-[10px] uppercase font-bold text-orange-200 block">Community Trust</span>
+              <span class="text-lg font-black text-emerald-300">100% On-Time</span>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 2-Column Responsive Workspace Grid (8 Cols Left / 4 Cols Right) -->
+    <main class="max-w-7xl mx-auto px-4 md:px-8 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+      
+      <!-- Left Column: Task Pipeline & Active Errand Stream (8 Cols) -->
+      <section class="lg:col-span-8 space-y-8">
+        
+        <!-- Active & In Progress Section -->
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-black flex items-center gap-2 text-md-on-surface">
+              <i data-lucide="clock" class="w-5 h-5 text-amber-600"></i>
+              Active Tasks In-Flight (<span id="count-in-progress">0</span>)
+            </h3>
+            <span class="text-xs text-md-on-surface-variant">Live escrow protection active</span>
+          </div>
+
+          <div id="seeker-in-progress-container" class="space-y-4"></div>
+        </div>
+
+        <!-- Open Requests & Incoming Helper Offers -->
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-black flex items-center gap-2 text-md-on-surface">
+              <i data-lucide="sparkles" class="w-5 h-5 text-md-primary"></i>
+              Open Requests & Helper Offers (<span id="count-open">0</span>)
+            </h3>
+            <span class="text-xs text-md-on-surface-variant">Review quotes before funding</span>
+          </div>
+
+          <div id="seeker-open-container" class="space-y-4"></div>
+        </div>
+
+      </section>
+
+      <!-- Right Column: Financial Analytics & Trusted Helpers Rail (4 Cols) -->
+      <aside class="lg:col-span-4 space-y-6">
+        
+        <!-- Cash Flow Analytics Card (Chart.js) -->
+        <div class="bg-white rounded-3xl p-5 border border-md-outline-variant/70 shadow-xs">
+          <div class="flex items-center justify-between pb-3 border-b border-md-outline-variant/50 mb-3">
+            <div>
+              <h4 class="font-black text-sm text-md-on-surface">Neighborhood Cash Flow</h4>
+              <p class="text-[10px] text-md-on-surface-variant">Escrow holds vs. completed releases</p>
+            </div>
+            <div class="flex items-center bg-md-surface-container rounded-full p-0.5 border border-md-outline-variant/60 text-[10px]">
+              <button onclick="updateChartRange('7d')" class="px-2 py-0.5 rounded-full font-bold bg-md-primary text-white shadow-xs">7D</button>
+              <button onclick="updateChartRange('30d')" class="px-2 py-0.5 rounded-full font-bold text-md-on-surface-variant">30D</button>
+            </div>
+          </div>
+
+          <!-- Canvas for Chart.js -->
+          <div class="relative h-44 w-full">
+            <canvas id="seekerCashFlowChart"></canvas>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-md-outline-variant/40 text-center">
+            <div class="bg-md-surface-container rounded-xl p-2">
+              <span class="text-[9px] uppercase font-bold text-md-on-surface-variant block">Total In (Refunds/Pay)</span>
+              <span class="text-xs font-black text-emerald-700">+$145.00</span>
+            </div>
+            <div class="bg-md-surface-container rounded-xl p-2">
+              <span class="text-[9px] uppercase font-bold text-md-on-surface-variant block">Total Out (Escrow/Errands)</span>
+              <span class="text-xs font-black text-md-primary">-$65.00</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Trusted Past Helpers (Quick Re-Hire) -->
+        <div class="bg-white rounded-3xl p-5 border border-md-outline-variant/70 shadow-xs">
+          <div class="flex items-center justify-between mb-3">
+            <h4 class="font-black text-sm text-md-on-surface">Re-Hire Favorite Helpers</h4>
+            <span class="text-[10px] text-md-primary font-bold">Verified 5★</span>
+          </div>
+
+          <div class="space-y-3">
+            <div class="flex items-center justify-between p-2.5 rounded-2xl bg-md-surface hover:bg-md-surface-container border border-md-outline-variant/50 transition-colors">
+              <div class="flex items-center gap-2.5">
+                <img src="https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150" class="w-8 h-8 rounded-full object-cover">
+                <div>
+                  <p class="font-bold text-xs">Sophia Chen</p>
+                  <p class="text-[10px] text-amber-700 font-semibold">★ 5.0 • Pet & House Care</p>
+                </div>
+              </div>
+              <button onclick="startChatWithSeeker('Sophia Chen', 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150', 'Quick Re-Hire Errand', '$25')" class="p-2 rounded-full bg-white hover:bg-md-primary hover:text-white border border-md-outline-variant/60 text-md-on-surface-variant transition-colors active:scale-90" title="Message">
+                <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+
+            <div class="flex items-center justify-between p-2.5 rounded-2xl bg-md-surface hover:bg-md-surface-container border border-md-outline-variant/50 transition-colors">
+              <div class="flex items-center gap-2.5">
+                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150" class="w-8 h-8 rounded-full object-cover">
+                <div>
+                  <p class="font-bold text-xs">Marcus Vance</p>
+                  <p class="text-[10px] text-amber-700 font-semibold">★ 4.9 • Grocery & Stairs Haul</p>
+                </div>
+              </div>
+              <button onclick="startChatWithSeeker('Marcus Vance', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150', 'Quick Re-Hire Errand', '$20')" class="p-2 rounded-full bg-white hover:bg-md-primary hover:text-white border border-md-outline-variant/60 text-md-on-surface-variant transition-colors active:scale-90" title="Message">
+                <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Safe Errand Rules -->
+        <div class="bg-gradient-to-br from-amber-50 to-orange-50 rounded-3xl p-4 border border-amber-200/80 text-xs text-amber-950 space-y-2">
+          <div class="flex items-center gap-1.5 font-black text-md-primary">
+            <i data-lucide="shield-alert" class="w-4 h-4"></i>
+            <span>Seeker Safety Check</span>
+          </div>
+          <p class="text-[11px] text-amber-900 leading-relaxed">
+            Only release the 4-digit PIN after you physically confirm the chore was performed or store items were handed over with receipt verification.
+          </p>
+        </div>
+
+      </aside>
+
+    </main>
+
+  </div>
+
+  <!-- ==================== DESKTOP CHAT FAB ==================== -->
+  <button 
+    id="chat-fab" 
+    onclick="toggleChat()" 
+    class="hidden md:flex fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-md-primary hover:bg-md-primary-hover text-white shadow-2xl items-center justify-center transition-all duration-200 active:scale-95"
+    title="Open Chat"
+  >
+    <i data-lucide="message-square" class="w-6 h-6"></i>
+    <span id="unread-dot" class="absolute top-3 right-3 w-3 h-3 bg-amber-400 rounded-full ring-2 ring-md-surface"></span>
+  </button>
+
+  <!-- ==================== RESPONSIVE CHAT WINDOW ==================== -->
+  <div 
+    id="chat-window" 
+    class="fixed inset-x-0 bottom-0 md:inset-x-auto md:bottom-24 md:right-8 z-50 w-full md:w-[380px] h-[85vh] md:h-[540px] bg-white rounded-t-4xl md:rounded-4xl shadow-2xl border border-md-outline-variant flex flex-col overflow-hidden hidden transition-all animate-in slide-in-from-bottom md:zoom-in-95"
+  >
+    <div class="bg-md-surface-container px-4 py-3 border-b border-md-outline-variant flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="relative">
+          <img id="chat-user-avatar" src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150" alt="Avatar" class="w-10 h-10 rounded-full object-cover border border-md-outline-variant">
+          <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white"></span>
+        </div>
+        <div>
+          <h4 id="chat-user-name" class="font-bold text-sm text-md-on-surface">Elena Rostova</h4>
+          <p id="chat-status-subtitle" class="text-[10px] text-emerald-700 font-bold">Helper Radar: Arrived at Location</p>
+        </div>
+      </div>
+      <button onclick="toggleChat()" class="p-1.5 rounded-full hover:bg-white transition-colors active:scale-90">
+        <i data-lucide="x" class="w-5 h-5 text-md-on-surface-variant"></i>
+      </button>
+    </div>
+
+    <!-- Task Context Subheader -->
+    <div class="bg-amber-50 px-4 py-2 border-b border-amber-100 flex items-center justify-between text-xs">
+      <span id="chat-task-title" class="truncate font-semibold text-amber-950">Companionship & Garden Stroll</span>
+      <span id="chat-task-comp" class="font-black text-md-primary ml-2">$25</span>
+    </div>
+
+    <!-- Messages Body -->
+    <div id="chat-messages-body" class="flex-1 p-4 overflow-y-auto space-y-3 text-xs bg-md-surface">
+      <div class="text-center my-1">
+        <span class="px-3 py-1 bg-white border border-md-outline-variant rounded-full text-[10px] text-md-on-surface-variant">
+          🔒 Exact addresses stay protected until both confirm.
+        </span>
+      </div>
+
+      <div class="flex items-start gap-2">
+        <img id="chat-bubble-avatar" src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150" class="w-6 h-6 rounded-full object-cover mt-1">
+        <div class="bg-white border border-md-outline-variant rounded-2xl rounded-tl-xs p-3 max-w-[78%] text-md-on-surface shadow-xs">
+          <p>Hello! Thanks for reaching out. Let me know when you're available.</p>
+          <span class="text-[9px] text-md-on-surface-variant block text-right mt-1">10:15 AM</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Attachment Preview Bar -->
+    <div id="chat-img-preview-bar" class="hidden px-4 py-2 bg-md-surface-container-high border-t border-md-outline-variant/40 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <img id="chat-preview-thumbnail" src="" alt="Receipt Preview" class="w-10 h-10 rounded-xl object-cover border border-md-outline-variant shadow-xs">
+        <div>
+          <span class="text-[11px] font-bold text-md-on-surface block">Receipt/Photo attached</span>
+          <span class="text-[9px] text-md-on-surface-variant">Ready to send with message</span>
+        </div>
+      </div>
+      <button type="button" onclick="clearAttachedImage()" class="p-1.5 rounded-full hover:bg-white text-md-on-surface-variant active:scale-90">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
+
+    <!-- Chat Input Form -->
+    <form onsubmit="handleSendMessage(event)" class="p-3 bg-white border-t border-md-outline-variant flex items-center gap-2">
+      <input 
+        type="file" 
+        id="chat-file-input" 
+        accept="image/*" 
+        class="hidden" 
+        onchange="handleImageSelection(event)"
+      />
+
+      <button 
+        type="button" 
+        onclick="triggerAudioFeedback('camera'); document.getElementById('chat-file-input').click();" 
+        class="w-10 h-10 rounded-full bg-md-surface-container hover:bg-md-surface-container-high text-md-on-surface-variant flex items-center justify-center active:scale-90 transition-colors border border-md-outline-variant/60"
+        title="Attach Receipt or Photo"
+      >
+        <i data-lucide="camera" class="w-4 h-4 text-md-primary"></i>
+      </button>
+
+      <input 
+        type="text" 
+        id="chat-input-text" 
+        placeholder="Type a message or note..." 
+        autocomplete="off"
+        class="flex-1 h-10 px-4 rounded-full bg-md-surface-container border border-md-outline-variant text-xs text-md-on-surface outline-none focus:border-md-primary"
+      />
+
+      <button 
+        type="submit" 
+        class="w-10 h-10 rounded-full bg-md-primary hover:bg-md-primary-hover text-white flex items-center justify-center active:scale-90 transition-transform shadow-xs"
+      >
+        <i data-lucide="send" class="w-4 h-4"></i>
+      </button>
+    </form>
+  </div>
+
+  <!-- ==================== MODALS ==================== -->
+
+  <!-- 1. Post Task Modal -->
+  <div id="modal-create" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs hidden items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white w-full sm:max-w-lg rounded-t-4xl sm:rounded-4xl p-6 md:p-8 shadow-2xl relative animate-in slide-in-from-bottom sm:zoom-in-95 max-h-[90vh] overflow-y-auto">
+      <button onclick="toggleModal('modal-create', false)" class="absolute top-6 right-6 p-2 rounded-full hover:bg-gray-100 active:scale-90">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <h3 class="text-2xl font-black mb-1">Post a Task / Errand</h3>
+      <p class="text-xs text-md-on-surface-variant mb-6">Describe what you need done. Approximate neighborhood radius protects your exact house address.</p>
+
+      <form id="create-task-form" onsubmit="handlePostTask(event)" class="space-y-4 text-xs">
+        <div>
+          <label class="font-bold text-md-on-surface-variant block mb-1">What do you need help with?</label>
+          <input type="text" id="input-title" placeholder="e.g. Carry grocery bags / Senior companion walk" required class="w-full h-12 px-4 rounded-2xl bg-md-surface-container border border-md-outline-variant text-sm outline-none focus:border-md-primary">
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="font-bold text-md-on-surface-variant block mb-1">Category</label>
+            <select id="input-category" class="w-full h-12 px-3 rounded-2xl bg-md-surface-container border border-md-outline-variant text-sm outline-none">
+              <option value="Companionship">Companionship</option>
+              <option value="Chores">Chores & Errands</option>
+              <option value="Pet Care">Pet Care</option>
+              <option value="Yard Work">Yard Work</option>
+              <option value="House Sitting">House Sitting</option>
+              <option value="Heavy Lifting">Heavy Lifting</option>
+            </select>
+          </div>
+          <div>
+            <label class="font-bold text-md-on-surface-variant block mb-1">Estimated Time</label>
+            <input type="text" id="input-duration" value="1 hour" required class="w-full h-12 px-4 rounded-2xl bg-md-surface-container border border-md-outline-variant text-sm outline-none focus:border-md-primary">
+          </div>
+        </div>
+
+        <!-- Dual Budget Splitter -->
+        <div class="p-4 bg-md-surface-container rounded-3xl border border-md-outline-variant/60 space-y-3">
+          <span class="text-[11px] font-black uppercase tracking-wider text-md-on-surface-variant block">Escrow Budget Breakdown</span>
+          
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-[10px] font-bold text-md-on-surface-variant block mb-1">Helper Labor Fee ($)</label>
+              <input type="number" id="input-compensation" value="25" required class="w-full h-10 px-3 rounded-xl bg-white border border-md-outline-variant text-sm font-bold text-md-primary outline-none focus:border-md-primary">
+            </div>
+            <div>
+              <label class="text-[10px] font-bold text-md-on-surface-variant block mb-1">Item/Store Budget ($)</label>
+              <input type="number" id="input-item-budget" value="0" placeholder="Optional" class="w-full h-10 px-3 rounded-xl bg-white border border-md-outline-variant text-sm font-bold text-md-on-surface outline-none focus:border-md-primary">
+            </div>
+          </div>
+          <p class="text-[10px] text-md-on-surface-variant">Store budgets are reimbursed strictly according to the photo receipts submitted in chat.</p>
+        </div>
+
+        <div>
+          <label class="font-bold text-md-on-surface-variant block mb-1">Task Details</label>
+          <textarea id="input-description" rows="3" placeholder="Provide clear instructions for helpers..." required class="w-full p-4 rounded-2xl bg-md-surface-container border border-md-outline-variant text-sm outline-none focus:border-md-primary resize-none"></textarea>
+        </div>
+
+        <button type="submit" class="w-full py-3.5 rounded-full bg-md-primary hover:bg-md-primary-hover text-white font-bold text-sm shadow-md active:scale-95 transition-all">
+          Publish Request to Feed
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2. Handshake PIN Modal -->
+  <div id="modal-otp" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs hidden items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white w-full sm:max-w-md rounded-t-4xl sm:rounded-4xl p-6 md:p-8 shadow-2xl relative animate-in slide-in-from-bottom sm:zoom-in-95 text-center">
+      <button onclick="toggleModal('modal-otp', false)" class="absolute top-6 right-6 p-2 rounded-full hover:bg-gray-100 active:scale-90">
+        <i data-lucide="x" class="w-5 h-5 text-gray-500"></i>
+      </button>
+
+      <div class="w-14 h-14 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center mx-auto mb-4">
+        <i data-lucide="shield-check" class="w-8 h-8 text-md-primary"></i>
+      </div>
+
+      <h3 class="text-xl font-black text-md-on-surface">Release Pay Handshake</h3>
+      <p class="text-xs text-md-on-surface-variant mt-1 mb-6 leading-relaxed">
+        Verify that the helper completed the errand and all receipts are accurate before sharing this PIN.
+      </p>
+
+      <div class="bg-md-surface-container rounded-3xl p-5 mb-6 border border-md-outline-variant/60">
+        <span class="text-[10px] font-black tracking-wider uppercase text-md-on-surface-variant block mb-1">Your 4-Digit Release Passcode</span>
+        <div id="otp-code-display" class="text-4xl font-black tracking-widest text-md-primary font-mono select-all">8492</div>
+        <p class="text-[10px] text-md-on-surface-variant mt-2 font-medium">Share this PIN with the helper in person or chat to finalize payout.</p>
+      </div>
+
+      <div class="space-y-2">
+        <button 
+          id="otp-confirm-release-btn"
+          class="w-full py-3.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-md active:scale-95 transition-all flex items-center justify-center gap-2"
+        >
+          <i data-lucide="check" class="w-4 h-4"></i>
+          Verify Handshake & Release Escrow
+        </button>
+
+        <button 
+          id="otp-no-show-btn"
+          class="w-full py-2.5 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs active:scale-95 transition-all flex items-center justify-center gap-1.5"
+        >
+          <i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i>
+          Report Helper No-Show / Cancel & Refund
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Dual-Blind Review Modal -->
+  <div id="modal-review" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs hidden items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white w-full sm:max-w-md rounded-t-4xl sm:rounded-4xl p-6 md:p-8 shadow-2xl relative animate-in slide-in-from-bottom sm:zoom-in-95 text-center">
+      <button onclick="toggleModal('modal-review', false)" class="absolute top-6 right-6 p-2 rounded-full hover:bg-gray-100 active:scale-90">
+        <i data-lucide="x" class="w-5 h-5 text-gray-500"></i>
+      </button>
+
+      <div class="w-14 h-14 rounded-2xl bg-orange-100 text-md-primary flex items-center justify-center mx-auto mb-3">
+        <i data-lucide="eye-off" class="w-7 h-7"></i>
+      </div>
+
+      <h3 class="text-xl font-black text-md-on-surface">Dual-Blind Community Review</h3>
+      <p class="text-xs text-md-on-surface-variant mt-1 mb-4 leading-relaxed">
+        Reviews stay locked and hidden until <strong>both</strong> parties submit feedback. This completely eliminates retaliatory scores.
+      </p>
+
+      <div class="flex items-center justify-center gap-2 mb-4">
+        <button type="button" onclick="setReviewRating(1)" class="star-btn text-gray-300 hover:text-amber-500 active:scale-90"><i data-lucide="star" class="w-8 h-8 fill-current"></i></button>
+        <button type="button" onclick="setReviewRating(2)" class="star-btn text-gray-300 hover:text-amber-500 active:scale-90"><i data-lucide="star" class="w-8 h-8 fill-current"></i></button>
+        <button type="button" onclick="setReviewRating(3)" class="star-btn text-gray-300 hover:text-amber-500 active:scale-90"><i data-lucide="star" class="w-8 h-8 fill-current"></i></button>
+        <button type="button" onclick="setReviewRating(4)" class="star-btn text-gray-300 hover:text-amber-500 active:scale-90"><i data-lucide="star" class="w-8 h-8 fill-current"></i></button>
+        <button type="button" onclick="setReviewRating(5)" class="star-btn text-amber-500 active:scale-90"><i data-lucide="star" class="w-8 h-8 fill-current"></i></button>
+      </div>
+
+      <textarea 
+        id="review-comment-input" 
+        rows="3" 
+        placeholder="Write honest feedback about communication, punctuality, and help quality..." 
+        class="w-full p-3 text-xs rounded-2xl bg-md-surface-container border border-md-outline-variant outline-none focus:border-md-primary mb-4 resize-none"
+      ></textarea>
+
+      <button 
+        onclick="submitBlindReview()"
+        class="w-full py-3.5 rounded-full bg-md-primary hover:bg-md-primary-hover text-white font-bold text-xs shadow-md active:scale-95 transition-all"
+      >
+        Lock In Private Review
+      </button>
+    </div>
+  </div>
+
+  <!-- 4. Notification Center Modal -->
+  <div id="modal-notifications" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs hidden items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white w-full sm:max-w-md rounded-t-4xl sm:rounded-4xl p-6 shadow-2xl relative animate-in slide-in-from-bottom sm:zoom-in-95">
+      <div class="flex items-center justify-between pb-4 border-b border-md-outline-variant">
+        <div>
+          <h3 class="font-black text-lg text-md-on-surface">Notifications</h3>
+          <p class="text-[11px] text-md-on-surface-variant">Real-time alerts, escrow updates, and trust activity</p>
+        </div>
+        <button onclick="toggleModal('modal-notifications', false)" class="p-1 rounded-full hover:bg-gray-100 active:scale-90">
+          <i data-lucide="x" class="w-5 h-5 text-gray-500"></i>
+        </button>
+      </div>
+
+      <div class="bg-md-surface-container p-1 rounded-full flex items-center my-4 border border-md-outline-variant text-xs">
+        <button id="notif-tab-all" onclick="setNotifTab('all')" class="flex-1 py-1.5 rounded-full font-bold transition-all bg-md-primary text-white shadow-xs">
+          All
+        </button>
+        <button id="notif-tab-escrow" onclick="setNotifTab('escrow')" class="flex-1 py-1.5 rounded-full font-bold transition-all text-md-on-surface-variant">
+          Escrow & Tasks
+        </button>
+        <button id="notif-tab-trust" onclick="setNotifTab('trust')" class="flex-1 py-1.5 rounded-full font-bold transition-all text-md-on-surface-variant">
+          Trust & Reviews
+        </button>
+      </div>
+
+      <div id="notif-list-container" class="space-y-2.5 max-h-72 overflow-y-auto pr-1"></div>
+
+      <div class="pt-4 border-t border-md-outline-variant flex justify-between items-center text-xs">
+        <button onclick="markAllNotificationsAsRead()" class="text-md-primary font-bold hover:underline">Mark all as read</button>
+        <span class="text-md-on-surface-variant text-[11px]">Auto-saved locally</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Dispute & Mediation Center Modal -->
+  <div id="modal-dispute" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs hidden items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white w-full sm:max-w-lg rounded-t-4xl sm:rounded-4xl p-6 md:p-8 shadow-2xl relative animate-in slide-in-from-bottom sm:zoom-in-95 max-h-[90vh] overflow-y-auto">
+      <button onclick="toggleModal('modal-dispute', false)" class="absolute top-6 right-6 p-2 rounded-full hover:bg-gray-100 active:scale-90">
+        <i data-lucide="x" class="w-5 h-5 text-gray-500"></i>
+      </button>
+
+      <div class="w-12 h-12 rounded-2xl bg-amber-100 text-md-primary flex items-center justify-center mb-3">
+        <i data-lucide="scale" class="w-6 h-6"></i>
+      </div>
+
+      <h3 class="text-xl font-black text-md-on-surface">Escrow Mediation & Dispute Center</h3>
+      <p class="text-xs text-md-on-surface-variant mt-1 mb-4 leading-relaxed">
+        If a task had missing items, incorrect receipts, or a helper no-show, the platform freezes the escrow money until evidence is examined.
+      </p>
+
+      <div class="bg-amber-50 rounded-2xl p-4 mb-4 border border-amber-200 text-xs text-amber-950 space-y-1.5">
+        <p class="font-bold flex items-center gap-1.5"><i data-lucide="lock" class="w-4 h-4 text-md-primary"></i> Escrow Freeze Guarantee</p>
+        <p class="text-[11px] text-amber-900 leading-relaxed">Neither party can withdraw or forfeit disputed funds. Internal chat transcripts and receipt uploads are automatically submitted as evidence.</p>
+      </div>
+
+      <form onsubmit="handleDisputeSubmit(event)" class="space-y-3 text-xs">
+        <div>
+          <label class="font-bold block mb-1 text-md-on-surface">Disputed Active Task</label>
+          <select id="dispute-task-select" class="w-full h-10 px-3 rounded-xl bg-md-surface-container border border-md-outline-variant outline-none">
+            <option value="Plant Watering & Mail Hold">Plant Watering & Mail Hold ($15.00)</option>
+            <option value="Grocery Carry Assist">Grocery Carry Assist ($20.00)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="font-bold block mb-1 text-md-on-surface">Reason for Mediation</label>
+          <select id="dispute-reason" class="w-full h-10 px-3 rounded-xl bg-md-surface-container border border-md-outline-variant outline-none">
+            <option value="no_show">Helper did not arrive / no-show</option>
+            <option value="receipt_mismatch">Uploaded receipt total does not match store purchase</option>
+            <option value="incomplete">Errand or chore was left incomplete</option>
+            <option value="other">Other communication disagreement</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="font-bold block mb-1 text-md-on-surface">Explanation & Evidence Details</label>
+          <textarea id="dispute-notes" rows="3" required placeholder="Explain what happened so our community support can resolve the escrow payout..." class="w-full p-3 rounded-xl bg-md-surface-container border border-md-outline-variant outline-none resize-none"></textarea>
+        </div>
+
+        <button type="submit" class="w-full py-3 rounded-full bg-rose-700 hover:bg-rose-800 text-white font-bold active:scale-95 transition-all shadow-xs">
+          Freeze Escrow & Submit for Review
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 6. Map Radius Modal -->
+  <div id="modal-map" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs hidden items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white w-full sm:max-w-lg rounded-t-4xl sm:rounded-4xl overflow-hidden shadow-2xl relative animate-in slide-in-from-bottom sm:zoom-in-95">
+      <div class="px-6 py-4 border-b border-md-outline-variant flex items-center justify-between">
+        <h3 class="font-black text-base text-md-on-surface">Approximate Location Area</h3>
+        <button onclick="toggleMapModal(false)" class="p-1 rounded-full hover:bg-gray-100 active:scale-90">
+          <i data-lucide="x" class="w-5 h-5 text-gray-500"></i>
+        </button>
+      </div>
+
+      <div id="map-container" class="w-full h-72 sm:h-80 bg-gray-100"></div>
+
+      <div class="p-4 bg-md-surface-container text-xs text-md-on-surface-variant flex items-center gap-2">
+        <i data-lucide="shield-check" class="w-4 h-4 text-md-primary"></i>
+        <span>Exact street address remains hidden until both parties confirm the help request.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. Based On Detail Modal -->
+  <div id="modal-tile-details" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs hidden items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white w-full sm:max-w-lg rounded-t-4xl sm:rounded-4xl p-6 md:p-8 shadow-2xl relative animate-in slide-in-from-bottom sm:zoom-in-95">
+      <button onclick="toggleModal('modal-tile-details', false)" class="absolute top-6 right-6 p-2 rounded-full hover:bg-gray-100 active:scale-90">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <span id="tile-cat" class="px-3 py-1 rounded-full bg-orange-100 text-orange-950 font-bold text-xs">Category</span>
+      <h3 id="tile-title" class="text-2xl font-black mt-3 mb-2 text-md-on-surface">Task Title</h3>
+      <p id="tile-desc" class="text-xs md:text-sm text-md-on-surface-variant leading-relaxed mb-6">Task description text goes here.</p>
+
+      <div class="bg-md-surface-container rounded-3xl p-4 mb-6 space-y-3 border border-md-outline-variant/60">
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-md-on-surface-variant font-medium">Coarse Safe Location:</span>
+          <button id="tile-map-btn" type="button" class="font-bold flex items-center gap-1.5 text-md-primary hover:underline cursor-pointer">
+            <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
+            <span id="tile-loc">Area</span>
+            <span class="text-[10px] bg-orange-100 text-orange-950 px-1.5 py-0.5 rounded font-bold">View Map</span>
+          </button>
+        </div>
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-md-on-surface-variant font-medium">Estimated Duration:</span>
+          <span id="tile-dur" class="font-bold text-md-on-surface">1 hour</span>
+        </div>
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-md-on-surface-variant font-medium">Offered Compensation:</span>
+          <span id="tile-comp" class="font-black text-base text-md-primary">$25.00</span>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between p-3.5 bg-white border border-md-outline-variant rounded-2xl mb-6">
+        <div class="flex items-center gap-3">
+          <img id="tile-avatar" src="" class="w-10 h-10 rounded-full object-cover">
+          <div>
+            <h4 id="tile-name" class="text-sm font-bold text-md-on-surface">User Name</h4>
+            <div class="flex items-center gap-1 text-xs text-amber-600 font-bold">
+              <i data-lucide="star" class="w-3.5 h-3.5 fill-amber-500"></i>
+              <span id="tile-rating">5.0</span>
+              <span id="tile-reviews" class="text-md-on-surface-variant font-normal">(120 reviews)</span>
+            </div>
+          </div>
+        </div>
+        <span id="tile-badge" class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-orange-100 text-orange-950">Trusted Neighbor</span>
+      </div>
+
+      <button id="tile-msg-btn" class="w-full py-3.5 rounded-full bg-md-primary hover:bg-md-primary-hover text-white font-bold text-sm shadow-md active:scale-95 transition-all flex items-center justify-center gap-2">
+        <i data-lucide="message-square" class="w-4 h-4"></i>
+        Message & Offer Assistance
+      </button>
+    </div>
+  </div>
+
+  <!-- 8. Profile Modal -->
+  <div id="modal-profile" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs hidden items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white w-full sm:max-w-md rounded-t-4xl sm:rounded-4xl p-6 md:p-8 shadow-2xl relative animate-in slide-in-from-bottom sm:zoom-in-95">
+      <button onclick="toggleModal('modal-profile', false)" class="absolute top-6 right-6 p-2 rounded-full hover:bg-gray-100 active:scale-90">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="flex flex-col items-center text-center mb-6">
+        <img id="prof-avatar" src="" alt="" class="w-20 h-20 rounded-full object-cover ring-4 ring-orange-200 mb-3 shadow-md">
+        <h3 id="prof-name" class="text-xl font-black text-md-on-surface"></h3>
+        
+        <div class="flex items-center gap-1.5 mt-1">
+          <i data-lucide="star" class="w-4 h-4 fill-amber-500 text-amber-500"></i>
+          <span id="prof-rating" class="font-bold text-sm"></span>
+          <span id="prof-reviews" class="text-xs text-md-on-surface-variant"></span>
+        </div>
+
+        <div class="mt-3">
+          <span id="prof-badge" class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-900"></span>
+        </div>
+      </div>
+
+      <div class="bg-md-surface-container p-1 rounded-full flex items-center mb-4 border border-md-outline-variant">
+        <button id="prof-tab-helper" onclick="setProfileTab('helper')" class="flex-1 py-2 rounded-full text-xs font-bold transition-all bg-md-primary text-white shadow-xs">
+          History as Helper
+        </button>
+        <button id="prof-tab-seeker" onclick="setProfileTab('seeker')" class="flex-1 py-2 rounded-full text-xs font-bold transition-all text-md-on-surface-variant">
+          History as Seeker
+        </button>
+      </div>
+
+      <div id="prof-content-helper" class="space-y-2.5 max-h-52 overflow-y-auto pr-1">
+        <div class="bg-md-surface rounded-2xl p-3.5 border border-md-outline-variant">
+          <div class="flex justify-between items-center text-xs font-bold mb-1">
+            <span>Elderly Park Walk</span>
+            <span class="text-amber-600">★ 5.0</span>
+          </div>
+          <p class="text-xs text-md-on-surface-variant">"Very patient, friendly, and punctual."</p>
+        </div>
+        <div class="bg-md-surface rounded-2xl p-3.5 border border-md-outline-variant">
+          <div class="flex justify-between items-center text-xs font-bold mb-1">
+            <span>Grocery Unloading</span>
+            <span class="text-amber-600">★ 5.0</span>
+          </div>
+          <p class="text-xs text-md-on-surface-variant">"Handled everything quickly and smoothly."</p>
+        </div>
+      </div>
+
+      <div id="prof-content-seeker" class="space-y-2.5 max-h-52 overflow-y-auto pr-1 hidden">
+        <div class="bg-md-surface rounded-2xl p-3.5 border border-md-outline-variant">
+          <div class="flex justify-between items-center text-xs font-bold mb-1">
+            <span>Heavy Couch Lift</span>
+            <span class="text-emerald-700">Prompt Payer</span>
+          </div>
+          <p class="text-xs text-md-on-surface-variant">"Clear instructions and released payment immediately."</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 9. Wallet Modal -->
+  <div id="modal-wallet" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs hidden items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white w-full sm:max-w-md rounded-t-4xl sm:rounded-4xl p-6 md:p-8 shadow-2xl relative animate-in slide-in-from-bottom sm:zoom-in-95 max-h-[90vh] overflow-y-auto">
+      <button onclick="toggleModal('modal-wallet', false)" class="absolute top-6 right-6 p-2 rounded-full hover:bg-gray-100 active:scale-90">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <h3 class="text-2xl font-black mb-1">Kindred Wallet</h3>
+      <p class="text-xs text-md-on-surface-variant mb-4">Track your available payouts and pending escrow holds.</p>
+
+      <div class="bg-gradient-to-br from-orange-900 to-amber-950 text-white rounded-3xl p-5 mb-5 shadow-lg">
+        <span class="text-xs text-white/70 font-medium">Available Cash-Out Balance</span>
+        <h2 id="wallet-avail-balance" class="text-3xl font-black mt-1 mb-3">$120.00</h2>
+        
+        <div class="flex items-center justify-between pt-3 border-t border-white/20 text-xs">
+          <span class="flex items-center gap-1.5 text-amber-200">
+            <i data-lucide="lock" class="w-4 h-4"></i>
+            In Escrow: <strong id="wallet-escrow-balance">$25.00</strong>
+          </span>
+          <button onclick="triggerAudioFeedback('cashout'); alert('Payout transfer initiated to linked Philippine E-Wallet (GCash/Maya)!')" class="bg-orange-500 hover:bg-orange-600 text-white font-bold px-4 py-1.5 rounded-full text-xs active:scale-95 transition-all">
+            Cash Out
+          </button>
+        </div>
+      </div>
+
+      <!-- Wallet Analytics Chart -->
+      <div class="mb-5 p-3 rounded-2xl bg-md-surface border border-md-outline-variant">
+        <span class="text-[10px] font-black uppercase text-md-on-surface-variant block mb-2">30-Day Cash Flow Flowrate</span>
+        <div class="h-32 w-full">
+          <canvas id="walletModalChart"></canvas>
+        </div>
+      </div>
+
+      <h4 class="text-xs font-bold uppercase tracking-wider text-md-on-surface-variant mb-2">Recent Transactions</h4>
+      <div id="wallet-transactions-list" class="space-y-2 max-h-40 overflow-y-auto pr-1"></div>
+    </div>
+  </div>
+
+  <!-- ==================== JAVASCRIPT STATE & SOUND ENGINE ==================== -->
+  <script>
+    let currentRole = 'helper';
+    let currentFilter = 'all';
+    let searchQuery = '';
+    let selectedCategoryFilter = null;
+    let isChatOpen = false;
+    let activeMapInstance = null;
+    let pendingImageBase64 = null;
+    let activeHandshakeTaskId = null;
+    let selectedReviewRating = 5;
+    let notifTab = 'all';
+    let chartInstanceSeeker = null;
+    let chartInstanceWallet = null;
+
+    // Draggable Floating Pill State
+    let isPillExpanded = false;
+    let isDraggingPill = false;
+    let pillStartX = 0, pillStartY = 0;
+    let pillPosX = 0, pillPosY = 0;
+    let pillDragDistance = 0;
+
+    const pillElem = document.getElementById('floating-live-pill');
+    const collapsedView = document.getElementById('live-pill-collapsed');
+    const expandedView = document.getElementById('live-pill-expanded');
+
+    function toggleLivePillExpand(show) {
+      triggerAudioFeedback('click');
+      isPillExpanded = typeof show === 'boolean' ? show : !isPillExpanded;
+      if (isPillExpanded) {
+        collapsedView.classList.add('hidden');
+        expandedView.classList.remove('hidden');
+      } else {
+        expandedView.classList.add('hidden');
+        collapsedView.classList.remove('hidden');
+      }
+      lucide.createIcons();
+    }
+
+    pillElem.addEventListener('pointerdown', (e) => {
+      if (e.target.closest('button')) return;
+
+      isDraggingPill = true;
+      pillDragDistance = 0;
+      pillStartX = e.clientX - pillPosX;
+      pillStartY = e.clientY - pillPosY;
+      pillElem.setPointerCapture(e.pointerId);
+    });
+
+    pillElem.addEventListener('pointermove', (e) => {
+      if (!isDraggingPill) return;
+
+      const newX = e.clientX - pillStartX;
+      const newY = e.clientY - pillStartY;
+      
+      pillDragDistance += Math.hypot(e.movementX, e.movementY);
+      pillPosX = newX;
+      pillPosY = newY;
+      
+      pillElem.style.transform = `translate3d(${pillPosX}px, ${pillPosY}px, 0)`;
+    });
+
+    pillElem.addEventListener('pointerup', (e) => {
+      if (!isDraggingPill) return;
+      isDraggingPill = false;
+      pillElem.releasePointerCapture(e.pointerId);
+
+      if (pillDragDistance < 6) {
+        toggleLivePillExpand();
+      }
+    });
+
+    // Multi-Tone Audio Synthesizer & Tactile Haptic System
+    function triggerAudioFeedback(type = 'click') {
+      try {
+        if ('vibrate' in navigator) {
+          switch (type) {
+            case 'success':
+              navigator.vibrate([30, 50, 60]);
+              break;
+            case 'cashout':
+              navigator.vibrate([40, 40, 40, 40, 80]);
+              break;
+            case 'camera':
+              navigator.vibrate([15, 30]);
+              break;
+            case 'send':
+              navigator.vibrate([20, 20]);
+              break;
+            case 'alert':
+              navigator.vibrate([80, 40, 80]);
+              break;
+            default:
+              navigator.vibrate(12);
+          }
+        }
+
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        const now = ctx.currentTime;
+
+        if (type === 'success') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(523.25, now);
+          osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.15);
+          gain.gain.setValueAtTime(0.12, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.22);
+          osc.start(now);
+          osc.stop(now + 0.22);
+        } else if (type === 'cashout') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(659.25, now);
+          osc.frequency.setValueAtTime(880.00, now + 0.08);
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.28);
+          osc.start(now);
+          osc.stop(now + 0.28);
+        } else if (type === 'camera') {
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(800, now);
+          osc.frequency.setValueAtTime(400, now + 0.04);
+          gain.gain.setValueAtTime(0.08, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.08);
+          osc.start(now);
+          osc.stop(now + 0.08);
+        } else if (type === 'send') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(350, now);
+          osc.frequency.exponentialRampToValueAtTime(900, now + 0.12);
+          gain.gain.setValueAtTime(0.1, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.12);
+          osc.start(now);
+          osc.stop(now + 0.12);
+        } else if (type === 'alert') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(220, now);
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+          osc.start(now);
+          osc.stop(now + 0.25);
+        } else if (type === 'search') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(440, now);
+          gain.gain.setValueAtTime(0.06, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.06);
+          osc.start(now);
+          osc.stop(now + 0.06);
+        } else {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(600, now);
+          gain.gain.setValueAtTime(0.05, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.04);
+          osc.start(now);
+          osc.stop(now + 0.04);
+        }
+      } catch (e) {}
+    }
+
+    let notifications = [
+      { id: 'n1', type: 'escrow', unread: true, title: 'Escrow Secured: $25.00', desc: 'Hold locked for Companionship Walk. Funds safe until completion.', time: '5m ago' },
+      { id: 'n2', type: 'escrow', unread: true, title: 'Helper Live Check-In', desc: 'Sophia Chen updated status: Arrived at Gate.', time: '12m ago' },
+      { id: 'n3', type: 'trust', unread: false, title: 'Identity Verified', desc: 'Your Barangay / PhilID verification level was upgraded to Level 2.', time: '2h ago' },
+      { id: 'n4', type: 'trust', unread: false, title: 'Dual-Blind Review Prompt', desc: 'Marcus Vance submitted a private review. Leave yours to reveal.', time: '1d ago' }
+    ];
+
+    let currentUser = {
+      id: 'u-dan',
+      name: 'Dan Dulutan',
+      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
+      isTrusted: true,
+      rating: 4.95,
+      helperReviewsCount: 28,
+      seekerReviewsCount: 8,
+      wallet: {
+        availableBalance: 120.00,
+        pendingEscrow: 25.00,
+        transactions: [
+          { id: 'tx-1', type: 'earned', title: 'Elderly Park Walk', amount: 25.00, date: 'Yesterday' },
+          { id: 'tx-2', type: 'spent', title: 'Heavy Plant Move', amount: 30.00, date: '3 days ago' },
+          { id: 'tx-3', type: 'earned', title: 'Grocery Run Carry', amount: 20.00, date: 'Last week' },
+        ]
+      }
+    };
+
+    let activeChatContext = {
+      userName: 'Elena Rostova',
+      userAvatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150',
+      taskTitle: 'Companionship & Garden Stroll',
+      compensation: '$25'
+    };
+
+    let tasks = [
+      {
+        id: 't-1',
+        title: 'Companionship & Garden Stroll',
+        category: 'Companionship',
+        description: 'Looking for someone to accompany my grandmother for a 45-minute afternoon walk around the community park.',
+        coarseLocation: 'Green Valley • ~1.2 km away',
+        lat: 14.4296,
+        lng: 120.9367,
+        estDuration: '1 hour',
+        compensation: 25,
+        itemBudget: 0,
+        status: 'open',
+        isRecommended: true,
+        completionOtp: '8492',
+        helperRadar: 'Departing Soon',
+        seeker: {
+          id: 'u-elena',
+          name: 'Elena Rostova',
+          avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150',
+          isTrusted: true,
+          rating: 4.9,
+          reviewsCount: 14
+        },
+        applicants: [
+          { id: 'u-dan', name: 'Dan Dulutan', avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150', rating: 4.95, isTrusted: true, message: "I am nearby Green Valley and free this afternoon!" }
+        ]
+      },
+      {
+        id: 't-2',
+        title: 'Grocery Carry & Pantry Organization',
+        category: 'Chores',
+        description: 'Need assistance carrying 4 heavy bags of groceries up the 2nd floor stairs and organizing the kitchen pantry.',
+        coarseLocation: 'Downtown District • ~2.5 km away',
+        lat: 14.4150,
+        lng: 120.9400,
+        estDuration: '45 mins',
+        compensation: 20,
+        itemBudget: 35,
+        status: 'open',
+        isRecommended: true,
+        completionOtp: '3157',
+        helperRadar: 'Departing Soon',
+        seeker: {
+          id: 'u-marcus',
+          name: 'Marcus Vance',
+          avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
+          isTrusted: false,
+          rating: 5.0,
+          reviewsCount: 2
+        },
+        applicants: []
+      },
+      {
+        id: 't-3',
+        title: 'Plant Watering & Mail Hold Check',
+        category: 'House Sitting',
+        description: 'Need someone to water my balcony plants and check the front mailbox while I am away for the weekend.',
+        coarseLocation: 'Westside Suburbs • ~1.5 km away',
+        lat: 14.3900,
+        lng: 120.9100,
+        estDuration: '30 mins',
+        compensation: 15,
+        itemBudget: 0,
+        status: 'in_progress',
+        isRecommended: false,
+        completionOtp: '6721',
+        helperRadar: 'On the Way (12m)',
+        seeker: {
+          id: 'u-dan',
+          name: 'Dan Dulutan',
+          avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
+          isTrusted: true,
+          rating: 4.95,
+          reviewsCount: 8
+        },
+        assignedHelper: {
+          id: 'u-sophia',
+          name: 'Sophia Chen',
+          avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150',
+          rating: 4.85
+        },
+        applicants: []
+      }
+    ];
+
+    function setRole(role) {
+      triggerAudioFeedback('click');
+      currentRole = role;
+      const helperBtn = document.getElementById('btn-helper-mode');
+      const seekerBtn = document.getElementById('btn-seeker-mode');
+      const dockHelper = document.getElementById('dock-helper-btn');
+      const dockSeeker = document.getElementById('dock-seeker-btn');
+      const helperView = document.getElementById('view-helper');
+      const seekerView = document.getElementById('view-seeker');
+      const statusText = document.getElementById('mode-status-text');
+
+      if (role === 'helper') {
+        if (helperBtn) helperBtn.className = 'flex items-center gap-2 px-5 py-2 rounded-full text-xs font-bold transition-all bg-md-primary text-white shadow-md cursor-pointer';
+        if (seekerBtn) seekerBtn.className = 'flex items-center gap-2 px-5 py-2 rounded-full text-xs font-bold transition-all text-md-on-surface-variant hover:text-md-primary cursor-pointer';
+        dockHelper.className = 'flex flex-col items-center gap-1 text-[10px] font-bold text-md-primary transition-transform active:scale-90';
+        dockSeeker.className = 'flex flex-col items-center gap-1 text-[10px] font-bold text-md-on-surface-variant transition-transform active:scale-90';
+        helperView.classList.remove('hidden');
+        seekerView.classList.add('hidden');
+        statusText.innerHTML = '🔍 You are browsing as a <strong>Helper</strong>. Find neighbor requests below.';
+        renderHelperFeed();
+      } else {
+        if (seekerBtn) seekerBtn.className = 'flex items-center gap-2 px-5 py-2 rounded-full text-xs font-bold transition-all bg-md-primary text-white shadow-md cursor-pointer';
+        if (helperBtn) helperBtn.className = 'flex items-center gap-2 px-5 py-2 rounded-full text-xs font-bold transition-all text-md-on-surface-variant hover:text-md-primary cursor-pointer';
+        dockSeeker.className = 'flex flex-col items-center gap-1 text-[10px] font-bold text-md-primary transition-transform active:scale-90';
+        dockHelper.className = 'flex flex-col items-center gap-1 text-[10px] font-bold text-md-on-surface-variant transition-transform active:scale-90';
+        seekerView.classList.remove('hidden');
+        helperView.classList.add('hidden');
+        statusText.innerHTML = '✍️ You are in <strong>Need Help (Seeker) Mode</strong>. Manage and post requests below.';
+        renderSeekerDashboard();
+        initSeekerCashFlowChart();
+      }
+      lucide.createIcons();
+    }
+
+    function applyPresetTemplate(title, cat, desc, labor, items) {
+      triggerAudioFeedback('click');
+      document.getElementById('input-title').value = title;
+      document.getElementById('input-category').value = cat;
+      document.getElementById('input-description').value = desc;
+      document.getElementById('input-compensation').value = labor;
+      document.getElementById('input-item-budget').value = items;
+      toggleModal('modal-create', true);
+    }
+
+    function setFilter(filter) {
+      triggerAudioFeedback('click');
+      currentFilter = filter;
+      selectedCategoryFilter = null;
+      const allBtn = document.getElementById('filter-all');
+      const recBtn = document.getElementById('filter-rec');
+
+      if (filter === 'all') {
+        allBtn.className = 'flex-1 sm:flex-initial px-4 py-2 rounded-full text-xs font-bold bg-md-primary text-white shadow-xs active:scale-95 transition-transform';
+        recBtn.className = 'flex-1 sm:flex-initial flex items-center justify-center gap-1 px-4 py-2 rounded-full text-xs font-bold bg-white text-md-on-surface-variant border border-md-outline-variant active:scale-95 transition-transform';
+      } else {
+        recBtn.className = 'flex-1 sm:flex-initial flex items-center justify-center gap-1 px-4 py-2 rounded-full text-xs font-bold bg-md-primary text-white shadow-xs active:scale-95 transition-transform';
+        allBtn.className = 'flex-1 sm:flex-initial px-4 py-2 rounded-full text-xs font-bold bg-white text-md-on-surface-variant border border-md-outline-variant active:scale-95 transition-transform';
+      }
+      renderHelperFeed();
+    }
+
+    function filterByCategory(cat) {
+      triggerAudioFeedback('click');
+      selectedCategoryFilter = cat;
+      if (currentRole !== 'helper') setRole('helper');
+      renderHelperFeed();
+      document.getElementById('task-grid').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function handleSearch(val) {
+      searchQuery = val.toLowerCase().trim();
+      renderHelperFeed();
+    }
+
+    function scrollRecommended(offset) {
+      triggerAudioFeedback('click');
+      document.getElementById('recommended-container').scrollBy({ left: offset, behavior: 'smooth' });
+    }
+
+    function showLocationRadius(lat, lng, radiusMeters = 1500) {
+      triggerAudioFeedback('click');
+      toggleMapModal(true);
+
+      setTimeout(() => {
+        if (!activeMapInstance) {
+          activeMapInstance = L.map('map-container').setView([lat, lng], 13);
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+          }).addTo(activeMapInstance);
+        } else {
+          activeMapInstance.setView([lat, lng], 13);
+          activeMapInstance.eachLayer((layer) => {
+            if (layer instanceof L.Circle) {
+              activeMapInstance.removeLayer(layer);
+            }
+          });
+        }
+
+        L.circle([lat, lng], {
+          color: '#C05600',
+          fillColor: '#C05600',
+          fillOpacity: 0.25,
+          radius: radiusMeters
+        }).addTo(activeMapInstance);
+
+        activeMapInstance.invalidateSize();
+        lucide.createIcons();
+      }, 150);
+    }
+
+    function toggleMapModal(show) {
+      const modal = document.getElementById('modal-map');
+      if (show) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      } else {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+    }
+
+    function openTileDetails(title, cat, desc, loc, dur, comp, name, avatar, isTrusted, rating, reviews, lat, lng) {
+      triggerAudioFeedback('click');
+      document.getElementById('tile-title').textContent = title;
+      document.getElementById('tile-cat').textContent = cat;
+      document.getElementById('tile-desc').textContent = desc;
+      document.getElementById('tile-loc').textContent = loc;
+      document.getElementById('tile-dur').textContent = dur;
+      document.getElementById('tile-comp').textContent = `$${comp}.00`;
+      document.getElementById('tile-name').textContent = name;
+      document.getElementById('tile-avatar').src = avatar;
+      document.getElementById('tile-rating').textContent = rating;
+      document.getElementById('tile-reviews').textContent = `(${reviews} reviews)`;
+      document.getElementById('tile-badge').textContent = isTrusted ? 'Verified Trusted Neighbor' : 'New Member';
+      
+      const mapBtn = document.getElementById('tile-map-btn');
+      mapBtn.onclick = function() {
+        showLocationRadius(lat, lng, 1500);
+      };
+
+      const msgBtn = document.getElementById('tile-msg-btn');
+      msgBtn.onclick = function() {
+        toggleModal('modal-tile-details', false);
+        startChatWithSeeker(name, avatar, title, `$${comp}`);
+      };
+
+      toggleModal('modal-tile-details', true);
+    }
+
+    function handleImageSelection(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        pendingImageBase64 = event.target.result;
+        document.getElementById('chat-preview-thumbnail').src = pendingImageBase64;
+        document.getElementById('chat-img-preview-bar').classList.remove('hidden');
+        triggerAudioFeedback('camera');
+        lucide.createIcons();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function clearAttachedImage() {
+      pendingImageBase64 = null;
+      document.getElementById('chat-file-input').value = '';
+      document.getElementById('chat-img-preview-bar').classList.add('hidden');
+    }
+
+    function openOtpModal(taskId) {
+      triggerAudioFeedback('click');
+      activeHandshakeTaskId = taskId;
+      const target = tasks.find(t => t.id === taskId);
+      const code = target?.completionOtp || '8492';
+      
+      document.getElementById('otp-code-display').textContent = code;
+
+      const confirmBtn = document.getElementById('otp-confirm-release-btn');
+      confirmBtn.onclick = function() {
+        confirmTaskCompletion(taskId);
+        toggleModal('modal-otp', false);
+      };
+
+      const noShowBtn = document.getElementById('otp-no-show-btn');
+      noShowBtn.onclick = function() {
+        cancelNoShowRefund(taskId);
+        toggleModal('modal-otp', false);
+      };
+
+      toggleModal('modal-otp', true);
+    }
+
+    function cancelNoShowRefund(taskId) {
+      triggerAudioFeedback('alert');
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) return;
+
+      tasks = tasks.map(t => t.id === taskId ? { ...t, status: 'cancelled' } : t);
+      
+      currentUser.wallet.pendingEscrow = Math.max(0, currentUser.wallet.pendingEscrow - task.compensation);
+      currentUser.wallet.availableBalance += task.compensation;
+      currentUser.wallet.transactions.unshift({
+        id: `tx-${Date.now()}`,
+        type: 'earned',
+        title: `Refund: ${task.title}`,
+        amount: task.compensation,
+        date: 'Just now'
+      });
+
+      document.getElementById('header-balance-text').textContent = `$${currentUser.wallet.availableBalance.toFixed(2)}`;
+      document.getElementById('wallet-avail-balance').textContent = `$${currentUser.wallet.availableBalance.toFixed(2)}`;
+      document.getElementById('wallet-escrow-balance').textContent = `$${currentUser.wallet.pendingEscrow.toFixed(2)}`;
+      document.getElementById('seeker-hero-escrow-text').textContent = `$${currentUser.wallet.pendingEscrow.toFixed(2)} Locked`;
+
+      alert(`Task cancelled due to no-show. $${task.compensation.toFixed(2)} escrow hold has been refunded immediately to your available balance!`);
+      renderSeekerDashboard();
+    }
+
+    function confirmTaskCompletion(taskId) {
+      triggerAudioFeedback('success');
+      const task = tasks.find(t => t.id === taskId);
+      tasks = tasks.map(t => t.id === taskId ? { ...t, status: 'completed' } : t);
+      
+      if (task) {
+        currentUser.wallet.pendingEscrow = Math.max(0, currentUser.wallet.pendingEscrow - task.compensation);
+        document.getElementById('wallet-escrow-balance').textContent = `$${currentUser.wallet.pendingEscrow.toFixed(2)}`;
+        document.getElementById('seeker-hero-escrow-text').textContent = `$${currentUser.wallet.pendingEscrow.toFixed(2)} Locked`;
+      }
+
+      toggleModal('modal-review', true);
+      renderSeekerDashboard();
+    }
+
+    function setReviewRating(starNum) {
+      triggerAudioFeedback('click');
+      selectedReviewRating = starNum;
+      const btns = document.querySelectorAll('.star-btn');
+      btns.forEach((btn, idx) => {
+        if (idx < starNum) {
+          btn.classList.remove('text-gray-300');
+          btn.classList.add('text-amber-500');
+        } else {
+          btn.classList.add('text-gray-300');
+          btn.classList.remove('text-amber-500');
+        }
+      });
+    }
+
+    function submitBlindReview() {
+      triggerAudioFeedback('success');
+      toggleModal('modal-review', false);
+      alert('Your review has been locked into escrow! It will automatically publish once both parties review, or after 7 days.');
+      document.getElementById('review-comment-input').value = '';
+    }
+
+    function handleDisputeSubmit(e) {
+      e.preventDefault();
+      triggerAudioFeedback('alert');
+      toggleModal('modal-dispute', false);
+      alert('Escrow frozen! The dispute center has locked this transaction from auto-release. A community mediator will review chat transcripts and receipts.');
+      document.getElementById('dispute-notes').value = '';
+    }
+
+    function setNotifTab(tab) {
+      triggerAudioFeedback('click');
+      notifTab = tab;
+      const allBtn = document.getElementById('notif-tab-all');
+      const escrowBtn = document.getElementById('notif-tab-escrow');
+      const trustBtn = document.getElementById('notif-tab-trust');
+
+      [allBtn, escrowBtn, trustBtn].forEach(b => {
+        b.className = 'flex-1 py-1.5 rounded-full text-xs font-bold transition-all text-md-on-surface-variant';
+      });
+
+      if (tab === 'all') allBtn.className = 'flex-1 py-1.5 rounded-full text-xs font-bold transition-all bg-md-primary text-white shadow-xs';
+      if (tab === 'escrow') escrowBtn.className = 'flex-1 py-1.5 rounded-full text-xs font-bold transition-all bg-md-primary text-white shadow-xs';
+      if (tab === 'trust') trustBtn.className = 'flex-1 py-1.5 rounded-full text-xs font-bold transition-all bg-md-primary text-white shadow-xs';
+
+      renderNotifications();
+    }
+
+    function renderNotifications() {
+      const container = document.getElementById('notif-list-container');
+      container.innerHTML = '';
+
+      const filtered = notifications.filter(n => notifTab === 'all' || n.type === notifTab);
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<p class="text-xs text-center py-6 text-md-on-surface-variant">No alerts in this category.</p>`;
+        return;
+      }
+
+      filtered.forEach(n => {
+        const item = document.createElement('div');
+        item.className = `p-3 rounded-2xl border text-xs transition-colors flex items-start gap-2.5 ${n.unread ? 'bg-amber-50/70 border-amber-200' : 'bg-white border-md-outline-variant'}`;
+        item.innerHTML = `
+          <span class="w-2 h-2 rounded-full mt-1.5 ${n.unread ? 'bg-md-primary' : 'bg-transparent'}"></span>
+          <div class="flex-1">
+            <div class="flex justify-between items-center mb-0.5">
+              <h4 class="font-bold text-md-on-surface">${n.title}</h4>
+              <span class="text-[10px] text-md-on-surface-variant font-medium">${n.time}</span>
+            </div>
+            <p class="text-[11px] text-md-on-surface-variant leading-relaxed">${n.desc}</p>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+
+      const unreadCount = notifications.filter(n => n.unread).length;
+      document.getElementById('notif-badge').style.display = unreadCount > 0 ? 'block' : 'none';
+      lucide.createIcons();
+    }
+
+    function markAllNotificationsAsRead() {
+      triggerAudioFeedback('click');
+      notifications = notifications.map(n => ({ ...n, unread: false }));
+      renderNotifications();
+    }
+
+    function renderHelperFeed() {
+      const grid = document.getElementById('task-grid');
+      grid.innerHTML = '';
+
+      const openTasks = tasks.filter(t => t.status === 'open');
+      const filtered = openTasks.filter(t => {
+        const matchesRec = currentFilter === 'all' || t.isRecommended;
+        const matchesCat = !selectedCategoryFilter || t.category === selectedCategoryFilter;
+        const matchesSearch = !searchQuery || 
+          t.title.toLowerCase().includes(searchQuery) || 
+          t.description.toLowerCase().includes(searchQuery) ||
+          t.category.toLowerCase().includes(searchQuery);
+
+        return matchesRec && matchesCat && matchesSearch;
+      });
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full py-12 text-center bg-white rounded-3xl p-6 border border-md-outline-variant">
+            <i data-lucide="search-x" class="w-10 h-10 mx-auto text-md-outline mb-2 opacity-50"></i>
+            <p class="text-sm font-bold text-md-on-surface">No help requests matched your search.</p>
+            <button onclick="setFilter('all')" class="mt-3 text-xs text-md-primary font-bold underline">Reset Filters</button>
+          </div>
+        `;
+        lucide.createIcons();
+        return;
+      }
+
+      filtered.forEach(task => {
+        const badge = task.seeker.isTrusted 
+          ? `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-orange-100 text-orange-900"><i data-lucide="shield-check" class="w-3.5 h-3.5 text-orange-700"></i> Trusted</span>`
+          : `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-gray-100 text-gray-700">New Account</span>`;
+
+        const card = document.createElement('div');
+        card.className = "bg-white rounded-3xl p-6 shadow-xs hover:shadow-xl transition-all duration-200 flex flex-col justify-between border border-md-outline-variant group";
+        card.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between gap-3 mb-4">
+              <div onclick="openProfile('${task.seeker.name}', '${task.seeker.avatar}', ${task.seeker.isTrusted}, ${task.seeker.rating}, ${task.seeker.reviewsCount})" class="flex items-center gap-3 cursor-pointer">
+                <img src="${task.seeker.avatar}" alt="${task.seeker.name}" class="w-10 h-10 rounded-full object-cover ring-2 ring-transparent group-hover:ring-md-primary transition-all">
+                <div>
+                  <p class="text-sm font-bold group-hover:text-md-primary transition-colors">${task.seeker.name}</p>
+                  <div class="flex items-center gap-1 text-xs text-md-on-surface-variant">
+                    <i data-lucide="star" class="w-3.5 h-3.5 fill-amber-500 text-amber-500"></i>
+                    <span class="font-bold">${task.seeker.rating}</span>
+                    <span class="text-[11px]">(${task.seeker.reviewsCount})</span>
+                  </div>
+                </div>
+              </div>
+              ${badge}
+            </div>
+
+            <span class="inline-block text-[10px] font-black text-md-primary uppercase tracking-wider mb-1">${task.category}</span>
+            <h3 class="text-lg font-bold text-md-on-surface mb-2 leading-snug">${task.title}</h3>
+            <p class="text-xs text-md-on-surface-variant mb-5 line-clamp-2 leading-relaxed">${task.description}</p>
+
+            <div class="space-y-2 mb-6 pt-3 border-t border-md-outline-variant text-xs text-md-on-surface-variant">
+              <div>
+                <button 
+                  type="button"
+                  onclick="showLocationRadius(${task.lat}, ${task.lng}, 1500)" 
+                  class="flex items-center gap-1.5 font-medium hover:text-md-primary transition-colors group/loc text-left cursor-pointer"
+                >
+                  <i data-lucide="map-pin" class="w-3.5 h-3.5 text-md-primary group-hover/loc:scale-110 transition-transform"></i>
+                  <span class="underline decoration-dashed underline-offset-2">${task.coarseLocation}</span>
+                  <span class="text-[10px] bg-orange-100 text-orange-950 font-bold px-1.5 py-0.5 rounded ml-1">View Map</span>
+                </button>
+              </div>
+              <div class="flex items-center justify-between font-medium">
+                <span class="flex items-center gap-1">
+                  <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+                  ${task.estDuration}
+                </span>
+                <span class="flex items-center gap-1 font-black text-base text-md-primary">
+                  <i data-lucide="coins" class="w-4 h-4"></i>
+                  $${task.compensation}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <button onclick="startChatWithSeeker('${task.seeker.name}', '${task.seeker.avatar}', '${task.title}', '$${task.compensation}')" class="w-full py-2.5 rounded-full bg-md-primary hover:bg-md-primary-hover text-white text-xs font-bold active:scale-95 transition-all shadow-xs flex items-center justify-center gap-2">
+            <i data-lucide="message-square" class="w-4 h-4"></i>
+            Offer to Help & Chat
+          </button>
+        `;
+        grid.appendChild(card);
+      });
+
+      lucide.createIcons();
+    }
+
+    function renderSeekerDashboard() {
+      const openContainer = document.getElementById('seeker-open-container');
+      const progressContainer = document.getElementById('seeker-in-progress-container');
+      openContainer.innerHTML = '';
+      progressContainer.innerHTML = '';
+
+      const myTasks = tasks.filter(t => t.seeker.id === currentUser.id);
+      const openTasks = myTasks.filter(t => t.status === 'open');
+      const inProgressTasks = myTasks.filter(t => t.status === 'in_progress');
+
+      document.getElementById('count-open').textContent = openTasks.length;
+      document.getElementById('count-in-progress').textContent = inProgressTasks.length;
+
+      if (inProgressTasks.length === 0) {
+        progressContainer.innerHTML = `<p class="text-xs text-md-on-surface-variant bg-white border border-md-outline-variant rounded-2xl p-6 text-center">No active tasks being carried out right now.</p>`;
+      } else {
+        inProgressTasks.forEach(task => {
+          const item = document.createElement('div');
+          item.className = "bg-white rounded-3xl p-6 border border-md-outline-variant/70 shadow-xs space-y-4";
+          item.innerHTML = `
+            <div class="p-3 bg-md-surface-container rounded-2xl flex items-center justify-between text-[11px] font-bold">
+              <div class="flex items-center gap-1.5 text-emerald-700">
+                <i data-lucide="check-circle" class="w-4 h-4"></i> 1. Matched
+              </div>
+              <i data-lucide="arrow-right" class="w-3 h-3 text-md-outline"></i>
+              <div class="flex items-center gap-1.5 text-amber-700">
+                <i data-lucide="navigation-2" class="w-4 h-4"></i> 2. En Route
+              </div>
+              <i data-lucide="arrow-right" class="w-3 h-3 text-md-outline"></i>
+              <div class="flex items-center gap-1.5 text-md-on-surface-variant">
+                <i data-lucide="key" class="w-4 h-4"></i> 3. Handshake PIN
+              </div>
+            </div>
+
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="text-[10px] font-black text-md-primary uppercase tracking-wider">${task.category}</span>
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 flex items-center gap-1">
+                    <i data-lucide="navigation-2" class="w-3 h-3 text-md-primary"></i> ${task.helperRadar}
+                  </span>
+                </div>
+                <h4 class="font-bold text-base text-md-on-surface">${task.title}</h4>
+                <p class="text-xs text-md-on-surface-variant mt-0.5">
+                  Assigned Helper: <strong class="text-md-on-surface">${task.assignedHelper?.name}</strong> • Hold in Escrow: $${task.compensation}
+                </p>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <button onclick="startChatWithSeeker('${task.assignedHelper?.name}', '${task.assignedHelper?.avatar}', '${task.title}', '$${task.compensation}')" class="px-4 py-2 rounded-full bg-md-surface-container hover:bg-md-surface-container-high text-xs font-bold flex items-center gap-1.5 active:scale-95 transition-all">
+                  <i data-lucide="message-square" class="w-3.5 h-3.5"></i> Chat
+                </button>
+                <button onclick="openOtpModal('${task.id}')" class="px-5 py-2 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm active:scale-95 transition-all flex items-center gap-1.5">
+                  <i data-lucide="key" class="w-3.5 h-3.5"></i> Verify PIN & Release Pay
+                </button>
+              </div>
+            </div>
+          `;
+          progressContainer.appendChild(item);
+        });
+      }
+
+      if (openTasks.length === 0) {
+        openContainer.innerHTML = `<p class="text-xs text-md-on-surface-variant bg-white border border-md-outline-variant rounded-2xl p-6 text-center">You have no open requests waiting for offers.</p>`;
+      } else {
+        openTasks.forEach(task => {
+          const item = document.createElement('div');
+          item.className = "bg-white rounded-3xl p-6 border border-md-outline-variant/70 shadow-xs space-y-4";
+
+          let applicantsHTML = '';
+          if (task.applicants && task.applicants.length > 0) {
+            applicantsHTML = `
+              <div class="bg-md-surface-container rounded-2xl p-4 space-y-3">
+                <p class="text-[11px] font-black uppercase tracking-wider text-md-on-surface-variant">Helpers Who Offered Assistance:</p>
+                ${task.applicants.map(app => `
+                  <div class="bg-white rounded-2xl p-3 flex items-center justify-between gap-3 shadow-xs border border-md-outline-variant/50">
+                    <div class="flex items-center gap-2.5 cursor-pointer" onclick="openProfile('${app.name}', '${app.avatar}', ${app.isTrusted}, ${app.rating}, 15)">
+                      <img src="${app.avatar}" class="w-8 h-8 rounded-full object-cover">
+                      <div>
+                        <p class="text-xs font-bold hover:text-md-primary">${app.name} <span class="text-amber-600">★ ${app.rating}</span></p>
+                        <p class="text-[11px] text-md-on-surface-variant line-clamp-1">${app.message}</p>
+                      </div>
+                    </div>
+                    <button onclick="acceptApplicant('${task.id}', '${app.id}')" class="px-4 py-1.5 bg-md-primary hover:bg-md-primary-hover text-white rounded-full text-xs font-bold active:scale-95 transition-all">
+                      Accept Offer & Lock Escrow
+                    </button>
+                  </div>
+                `).join('')}
+              </div>
+            `;
+          }
+
+          item.innerHTML = `
+            <div class="flex items-start justify-between">
+              <div>
+                <span class="text-[10px] font-black text-md-primary uppercase">${task.category}</span>
+                <h4 class="font-bold text-lg">${task.title}</h4>
+                <p class="text-xs text-md-on-surface-variant">${task.coarseLocation} • Helper Labor: $${task.compensation} ${task.itemBudget ? `• Purchase Budget: $${task.itemBudget}` : ''}</p>
+              </div>
+              <span class="px-3 py-1 bg-amber-100 text-amber-950 rounded-full text-xs font-bold">
+                ${task.applicants.length} Offers Received
+              </span>
+            </div>
+            ${applicantsHTML}
+          `;
+          openContainer.appendChild(item);
+        });
+      }
+
+      lucide.createIcons();
+    }
+
+    function acceptApplicant(taskId, applicantId) {
+      triggerAudioFeedback('click');
+      tasks = tasks.map(t => {
+        if (t.id === taskId) {
+          const applicant = t.applicants.find(a => a.id === applicantId);
+          return { ...t, status: 'in_progress', assignedHelper: applicant, completionOtp: Math.floor(1000 + Math.random() * 9000).toString(), helperRadar: 'On the Way (15m)' };
+        }
+        return t;
+      });
+      renderSeekerDashboard();
+    }
+
+    function handlePostTask(e) {
+      e.preventDefault();
+      triggerAudioFeedback('success');
+      const title = document.getElementById('input-title').value;
+      const category = document.getElementById('input-category').value;
+      const duration = document.getElementById('input-duration').value;
+      const comp = Number(document.getElementById('input-compensation').value);
+      const items = Number(document.getElementById('input-item-budget').value || 0);
+      const desc = document.getElementById('input-description').value;
+
+      const newTask = {
+        id: `t-${Date.now()}`,
+        title,
+        category,
+        description: desc,
+        coarseLocation: 'Local Area • ~0.8 km away',
+        lat: 14.4200,
+        lng: 120.9300,
+        estDuration: duration,
+        compensation: comp,
+        itemBudget: items,
+        status: 'open',
+        isRecommended: false,
+        completionOtp: Math.floor(1000 + Math.random() * 9000).toString(),
+        helperRadar: 'Departing Soon',
+        seeker: {
+          id: currentUser.id,
+          name: currentUser.name,
+          avatar: currentUser.avatar,
+          isTrusted: currentUser.isTrusted,
+          rating: currentUser.rating,
+          reviewsCount: currentUser.seekerReviewsCount
+        },
+        applicants: []
+      };
+
+      tasks.unshift(newTask);
+      toggleModal('modal-create', false);
+      document.getElementById('create-task-form').reset();
+      
+      if (currentRole === 'seeker') {
+        renderSeekerDashboard();
+      } else {
+        renderHelperFeed();
+      }
+    }
+
+    function startChatWithSeeker(name, avatar, title, comp) {
+      triggerAudioFeedback('click');
+      activeChatContext = { userName: name, userAvatar: avatar, taskTitle: title, compensation: comp };
+      
+      document.getElementById('chat-user-name').textContent = name;
+      document.getElementById('chat-user-avatar').src = avatar;
+      document.getElementById('chat-bubble-avatar').src = avatar;
+      document.getElementById('chat-task-title').textContent = title;
+      document.getElementById('chat-task-comp').textContent = comp;
+
+      const chatWin = document.getElementById('chat-window');
+      chatWin.classList.remove('hidden');
+      isChatOpen = true;
+      document.getElementById('unread-dot').classList.add('hidden');
+      document.getElementById('chat-input-text').focus();
+    }
+
+    function toggleChat() {
+      triggerAudioFeedback('click');
+      const chatWin = document.getElementById('chat-window');
+      isChatOpen = !isChatOpen;
+      if (isChatOpen) {
+        chatWin.classList.remove('hidden');
+        document.getElementById('unread-dot').classList.add('hidden');
+      } else {
+        chatWin.classList.add('hidden');
+      }
+    }
+
+    function handleSendMessage(e) {
+      e.preventDefault();
+      const input = document.getElementById('chat-input-text');
+      const text = input.value.trim();
+
+      if (!text && !pendingImageBase64) return;
+      triggerAudioFeedback('send');
+
+      const body = document.getElementById('chat-messages-body');
+      const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      let imageHTML = '';
+      if (pendingImageBase64) {
+        imageHTML = `
+          <div class="mb-2 rounded-xl overflow-hidden border border-white/20">
+            <img src="${pendingImageBase64}" class="w-full max-h-48 object-cover rounded-xl" />
+            <span class="text-[9px] block text-white/80 mt-1 font-semibold">📎 Attached Receipt</span>
+          </div>
+        `;
+      }
+
+      const myBubble = document.createElement('div');
+      myBubble.className = "flex justify-end";
+      myBubble.innerHTML = `
+        <div class="bg-md-primary text-white rounded-2xl rounded-tr-xs p-3 max-w-[82%] shadow-xs">
+          ${imageHTML}
+          ${text ? `<p>${text}</p>` : ''}
+          <span class="text-[9px] text-white/80 block text-right mt-1">${now}</span>
+        </div>
+      `;
+      body.appendChild(myBubble);
+
+      const hadReceipt = !!pendingImageBase64;
+      input.value = '';
+      clearAttachedImage();
+      body.scrollTop = body.scrollHeight;
+
+      setTimeout(() => {
+        triggerAudioFeedback('click');
+        const replyBubble = document.createElement('div');
+        replyBubble.className = "flex items-start gap-2 animate-in fade-in";
+        
+        const replyMessage = hadReceipt 
+          ? "Got the receipt! I see the total matches our agreement. I'll approve the escrow release right away."
+          : "Thanks for the update! See you shortly.";
+
+        replyBubble.innerHTML = `
+          <img src="${activeChatContext.userAvatar}" class="w-6 h-6 rounded-full object-cover mt-1">
+          <div class="bg-white border border-md-outline-variant rounded-2xl rounded-tl-xs p-3 max-w-[78%] text-md-on-surface shadow-xs">
+            <p>${replyMessage}</p>
+            <span class="text-[9px] text-md-on-surface-variant block text-right mt-1">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+          </div>
+        `;
+        body.appendChild(replyBubble);
+        body.scrollTop = body.scrollHeight;
+      }, 1200);
+    }
+
+    function openProfile(name, avatar, isTrusted, rating, reviews) {
+      triggerAudioFeedback('click');
+      document.getElementById('prof-name').textContent = name;
+      document.getElementById('prof-avatar').src = avatar;
+      document.getElementById('prof-rating').textContent = rating;
+      document.getElementById('prof-reviews').textContent = `(${reviews || 12} reviews)`;
+      document.getElementById('prof-badge').textContent = isTrusted ? 'Verified Trusted Neighbor' : 'New Account';
+      setProfileTab('helper');
+      toggleModal('modal-profile', true);
+    }
+
+    function setProfileTab(tab) {
+      triggerAudioFeedback('click');
+      const btnHelper = document.getElementById('prof-tab-helper');
+      const btnSeeker = document.getElementById('prof-tab-seeker');
+      const contentHelper = document.getElementById('prof-content-helper');
+      const contentSeeker = document.getElementById('prof-content-seeker');
+
+      if (tab === 'helper') {
+        btnHelper.className = 'flex-1 py-2 rounded-full text-xs font-bold transition-all bg-md-primary text-white shadow-xs';
+        btnSeeker.className = 'flex-1 py-2 rounded-full text-xs font-bold transition-all text-md-on-surface-variant';
+        contentHelper.classList.remove('hidden');
+        contentSeeker.classList.add('hidden');
+      } else {
+        btnSeeker.className = 'flex-1 py-2 rounded-full text-xs font-bold transition-all bg-md-primary text-white shadow-xs';
+        btnHelper.className = 'flex-1 py-2 rounded-full text-xs font-bold transition-all text-md-on-surface-variant';
+        contentSeeker.classList.remove('hidden');
+        contentHelper.classList.add('hidden');
+      }
+    }
+
+    function initSeekerCashFlowChart() {
+      const ctx = document.getElementById('seekerCashFlowChart');
+      if (!ctx) return;
+      if (chartInstanceSeeker) chartInstanceSeeker.destroy();
+
+      chartInstanceSeeker = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+          datasets: [
+            {
+              label: 'In (Payouts/Refunds)',
+              data: [25, 40, 20, 0, 50, 10, 0],
+              borderColor: '#059669',
+              backgroundColor: 'rgba(5, 150, 105, 0.1)',
+              tension: 0.35,
+              fill: true,
+              borderWidth: 2,
+              pointRadius: 2
+            },
+            {
+              label: 'Out (Escrow Holds)',
+              data: [15, 20, 0, 30, 20, 0, 25],
+              borderColor: '#C05600',
+              backgroundColor: 'rgba(192, 86, 0, 0.08)',
+              tension: 0.35,
+              fill: true,
+              borderWidth: 2,
+              pointRadius: 2
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            x: { grid: { display: false }, ticks: { font: { size: 9 } } },
+            y: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { font: { size: 9 } } }
+          }
+        }
+      });
+    }
+
+    function initWalletModalChart() {
+      const ctx = document.getElementById('walletModalChart');
+      if (!ctx) return;
+      if (chartInstanceWallet) chartInstanceWallet.destroy();
+
+      chartInstanceWallet = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+          datasets: [
+            {
+              label: 'In',
+              data: [45, 60, 20, 75],
+              backgroundColor: '#059669',
+              borderRadius: 4
+            },
+            {
+              label: 'Out',
+              data: [30, 25, 45, 20],
+              backgroundColor: '#C05600',
+              borderRadius: 4
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { display: false }, ticks: { font: { size: 9 } } },
+            y: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { font: { size: 9 } } }
+          }
+        }
+      });
+    }
+
+    function updateChartRange(range) {
+      triggerAudioFeedback('click');
+      if (!chartInstanceSeeker) return;
+      if (range === '7d') {
+        chartInstanceSeeker.data.labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        chartInstanceSeeker.data.datasets[0].data = [25, 40, 20, 0, 50, 10, 0];
+        chartInstanceSeeker.data.datasets[1].data = [15, 20, 0, 30, 20, 0, 25];
+      } else {
+        chartInstanceSeeker.data.labels = ['W1', 'W2', 'W3', 'W4'];
+        chartInstanceSeeker.data.datasets[0].data = [80, 110, 65, 145];
+        chartInstanceSeeker.data.datasets[1].data = [45, 70, 35, 65];
+      }
+      chartInstanceSeeker.update();
+    }
+
+    function renderWallet() {
+      const list = document.getElementById('wallet-transactions-list');
+      list.innerHTML = '';
+
+      currentUser.wallet.transactions.forEach(tx => {
+        const item = document.createElement('div');
+        item.className = "p-3 bg-md-surface rounded-2xl flex items-center justify-between text-xs border border-md-outline-variant";
+        item.innerHTML = `
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-full flex items-center justify-center ${tx.type === 'earned' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
+              <i data-lucide="${tx.type === 'earned' ? 'arrow-down-left' : 'arrow-up-right'}" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <p class="font-bold text-md-on-surface">${tx.title}</p>
+              <p class="text-[10px] text-md-on-surface-variant">${tx.date}</p>
+            </div>
+          </div>
+          <span class="font-bold ${tx.type === 'earned' ? 'text-emerald-700' : 'text-md-on-surface'}">
+            ${tx.type === 'earned' ? `+$${tx.amount.toFixed(2)}` : `-$${tx.amount.toFixed(2)}`}
+          </span>
+        `;
+        list.appendChild(item);
+      });
+      lucide.createIcons();
+      initWalletModalChart();
+    }
+
+    function toggleModal(modalId, show) {
+      triggerAudioFeedback('click');
+      const modal = document.getElementById(modalId);
+      if (show) {
+        if (modalId === 'modal-wallet') renderWallet();
+        if (modalId === 'modal-notifications') renderNotifications();
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      } else {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+      lucide.createIcons();
+    }
+
+    // Initialize application feeds
+    renderHelperFeed();
+    renderNotifications();
+  </script>
+</body>
+</html>
